@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations;
 public class Rooms
 {
     [Key]
-    public int Id { get; set; }
+    public long Id { get; set; }
 
     [Required(ErrorMessage = "Room number is required.")]
     [Range(1, int.MaxValue, ErrorMessage = "Room number must be a positive number.")]

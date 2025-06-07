@@ -8,7 +8,7 @@ namespace l_hospital_mang.Data.Models
     public class Doctors
     {
         [Key]
-        public int Id { get; set; }
+        public long Id { get; set; }
 
         [Required(ErrorMessage = "First name is required.")]
         [StringLength(50, ErrorMessage = "First name cannot exceed 50 characters.")]
@@ -40,7 +40,7 @@ namespace l_hospital_mang.Data.Models
         public ICollection<Dates>? Dates { get; set; }
 
         [ForeignKey("Clinic")]
-        public int? ClinicId { get; set; }
+        public long? ClinicId { get; set; }
         public Clinicscs? Clinic { get; set; }
 
         public ICollection<doctors_shifts>? DoctorShifts { get; set; }

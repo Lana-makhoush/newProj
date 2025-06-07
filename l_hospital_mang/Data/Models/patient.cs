@@ -1,12 +1,13 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace l_hospital_mang.Data.Models
 {
     public class patient
     {
         [Key]
-        public int Id { get; set; }
+        public long Id { get; set; }
         [Required(ErrorMessage = "The value is required.")]
 
         public string First_Name { get; set; }
@@ -17,8 +18,10 @@ namespace l_hospital_mang.Data.Models
 
         public string Last_Name { get; set; }
         [Required(ErrorMessage = "The value is required.")]
-        [Range(0, int.MaxValue, ErrorMessage = "The value must be positive.")]
-        public int Age { get; set; }
+        [JsonConverter(typeof(DateOnlyJsonConverter))]
+        [DataType(DataType.Date)]
+        public DateTime? Age { get; set; }
+
         [Required(ErrorMessage = "The value is required.")]
         public string Residence { get; set; }
         [Required(ErrorMessage = "The value is required.")]

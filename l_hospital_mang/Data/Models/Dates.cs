@@ -6,7 +6,7 @@ namespace l_hospital_mang.Data.Models
     public class Dates
     {
         [Key]
-        public int Id { get; set; }
+        public long Id { get; set; }
 
         [Range(1, 31, ErrorMessage = "Day must be between 1 and 31")]
         public int Day { get; set; }
@@ -21,10 +21,10 @@ namespace l_hospital_mang.Data.Models
         [RegularExpression("^(AM|PM)$", ErrorMessage = "Time of day must be either 'AM' or 'PM'")]
         public string TimeOfDay { get; set; }
         [ForeignKey("Consulting_reservation")]
-        public int Consulting_reservationId { get; set; }
+        public long Consulting_reservationId { get; set; }
         public Consulting_reservation Consulting_reservation { get; set; }
         [ForeignKey("Doctor")]
-        public int DoctorId { get; set; }
+        public long DoctorId { get; set; }
         public Doctors Doctor { get; set; }
     }
 }

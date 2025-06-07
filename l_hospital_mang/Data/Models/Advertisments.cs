@@ -5,7 +5,7 @@ namespace l_hospital_mang.Data.Models
 {
     public class Advertisments
     {
-        public int Id { get; set; }  
+        public long Id { get; set; }  
         [Required]
         [MaxLength(100)]  
         public string ServiceName { get; set; }  
@@ -13,7 +13,7 @@ namespace l_hospital_mang.Data.Models
         [Range(0, 100)]  
         public decimal DiscountDegree { get; set; }
         [ForeignKey("Clinicscs")]
-        public int ClinicId { get; set; }
+        public long ClinicId { get; set; }
 
         public Clinicscs Clinic { get; set; }
     }

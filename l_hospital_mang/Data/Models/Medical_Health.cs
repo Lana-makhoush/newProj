@@ -6,7 +6,7 @@ namespace l_hospital_mang.Data.Models
     public class Medical_Health
     {
         [Key]
-        public int Id { get; set; }
+        public long Id { get; set; }
         [Required]
         public string Main_Complain { get; set; }
         [Required]
@@ -24,7 +24,7 @@ namespace l_hospital_mang.Data.Models
         [Required]
         public string notes { get; set; }
         [ForeignKey("Patient")]
-        public int PatientId { get; set; }
+        public long PatientId { get; set; }
 
         public patient Patient { get; set; }
     }

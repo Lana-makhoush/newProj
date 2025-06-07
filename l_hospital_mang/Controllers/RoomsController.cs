@@ -36,7 +36,6 @@ namespace l_hospital_mang.Controllers
 
             try
             {
-                // حفظ الغرفة
                 _context.Room.Add(room);
                 await _context.SaveChangesAsync();
 
@@ -51,7 +50,7 @@ namespace l_hospital_mang.Controllers
                         room.FloorNumber,
                         room.bedsNumber,
                         room.Price,
-                        room.IsOccupied 
+                        room.IsOccupied
                     }
                 });
             }
@@ -66,8 +65,77 @@ namespace l_hospital_mang.Controllers
             }
         }
 
+        [HttpPut("update-room/{id}")]
+        public async Task<IActionResult> UpdateRoom(int id, [FromForm] RoomUpdateDtocs updateDto)
+        {
+            var existingRoom = await _context.Room.FindAsync(id);
+            if (existingRoom == null)
+            {
+                return NotFound(new
+                {
+                    statusCode = 404,
+                    message = "Room not found."
+                });
+            }
+
+
+
+            if (updateDto.FloorNumber.HasValue)
+                existingRoom.FloorNumber = updateDto.FloorNumber.Value;
+
+            if (updateDto.bedsNumber.HasValue)
+                existingRoom.bedsNumber = updateDto.bedsNumber.Value;
+
+            if (updateDto.Price.HasValue)
+                existingRoom.Price = updateDto.Price.Value;
+            if (!string.IsNullOrWhiteSpace(updateDto.IsOccupied))
+                existingRoom.IsOccupied = updateDto.IsOccupied;
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new
+            {
+                statusCode = 200,
+                message = "Room updated successfully.",
+                data = new
+                {
+                    existingRoom.Id,
+                    existingRoom.RoomNumber,
+                    existingRoom.FloorNumber,
+                    existingRoom.bedsNumber,
+                    existingRoom.Price,
+                    existingRoom.IsOccupied
+                }
+            });
+        }
+
+
+
+        [HttpDelete("delete-room/{id}")]
+        public async Task<IActionResult> DeleteRoom(int id)
+        {
+            var room = await _context.Room.FindAsync(id);
+            if (room == null)
+            {
+                return NotFound(new
+                {
+                    statusCode = 404,
+                    message = "Room not found."
+                });
+            }
+
+            _context.Room.Remove(room);
+            await _context.SaveChangesAsync();
+
+            return Ok(new
+            {
+                statusCode = 200,
+                message = "Room deleted successfully."
+            });
+        }
+
         [HttpGet("{id}")]
-        public async Task<IActionResult> GetRoomById(int id)
+        public async Task<IActionResult> GetRoomById(long id)
         {
             var room = await _context.Room
                 .Where(r => r.Id == id)

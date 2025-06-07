@@ -24,14 +24,15 @@ namespace l_hospital_mang.Migrations
 
             modelBuilder.Entity("Resident_patients", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
 
-                    b.Property<int>("Age")
-                        .HasColumnType("int");
+                    b.Property<DateTime?>("Age")
+                        .IsRequired()
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("First_Name")
                         .IsRequired()
@@ -57,8 +58,8 @@ namespace l_hospital_mang.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int?>("RoomId")
-                        .HasColumnType("int");
+                    b.Property<long?>("RoomId")
+                        .HasColumnType("bigint");
 
                     b.HasKey("Id");
 
@@ -71,11 +72,11 @@ namespace l_hospital_mang.Migrations
 
             modelBuilder.Entity("Rooms", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
 
                     b.Property<int?>("FloorNumber")
                         .IsRequired()
@@ -104,14 +105,14 @@ namespace l_hospital_mang.Migrations
 
             modelBuilder.Entity("l_hospital_mang.Data.Models.Advertisments", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
 
-                    b.Property<int>("ClinicId")
-                        .HasColumnType("int");
+                    b.Property<long>("ClinicId")
+                        .HasColumnType("bigint");
 
                     b.Property<decimal>("DiscountDegree")
                         .HasColumnType("decimal(18,2)");
@@ -131,18 +132,18 @@ namespace l_hospital_mang.Migrations
 
             modelBuilder.Entity("l_hospital_mang.Data.Models.Analysis", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
 
-                    b.Property<int?>("Age")
+                    b.Property<DateTime?>("Age")
                         .IsRequired()
-                        .HasColumnType("int");
+                        .HasColumnType("datetime2");
 
-                    b.Property<int>("Consulting_reservationId")
-                        .HasColumnType("int");
+                    b.Property<long>("Consulting_reservationId")
+                        .HasColumnType("bigint");
 
                     b.Property<string>("First_Name")
                         .IsRequired()
@@ -160,6 +161,10 @@ namespace l_hospital_mang.Migrations
                         .IsRequired()
                         .HasColumnType("varbinary(max)");
 
+                    b.Property<string>("PdfFilePath")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<decimal>("Price")
                         .HasColumnType("decimal(18,2)");
 
@@ -173,11 +178,11 @@ namespace l_hospital_mang.Migrations
 
             modelBuilder.Entity("l_hospital_mang.Data.Models.CAmbulance_Car", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
 
                     b.Property<string>("CarNumber")
                         .IsRequired()
@@ -194,11 +199,11 @@ namespace l_hospital_mang.Migrations
 
             modelBuilder.Entity("l_hospital_mang.Data.Models.Clinicscs", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
 
                     b.Property<string>("Clinic_Name")
                         .IsRequired()
@@ -211,14 +216,14 @@ namespace l_hospital_mang.Migrations
 
             modelBuilder.Entity("l_hospital_mang.Data.Models.Consulting_reservation", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
 
-                    b.Property<int>("PatientId")
-                        .HasColumnType("int");
+                    b.Property<long>("PatientId")
+                        .HasColumnType("bigint");
 
                     b.Property<decimal>("Price")
                         .HasColumnType("decimal(18,2)");
@@ -237,20 +242,20 @@ namespace l_hospital_mang.Migrations
 
             modelBuilder.Entity("l_hospital_mang.Data.Models.Dates", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
 
-                    b.Property<int>("Consulting_reservationId")
-                        .HasColumnType("int");
+                    b.Property<long>("Consulting_reservationId")
+                        .HasColumnType("bigint");
 
                     b.Property<int>("Day")
                         .HasColumnType("int");
 
-                    b.Property<int>("DoctorId")
-                        .HasColumnType("int");
+                    b.Property<long>("DoctorId")
+                        .HasColumnType("bigint");
 
                     b.Property<int>("Month")
                         .HasColumnType("int");
@@ -274,14 +279,14 @@ namespace l_hospital_mang.Migrations
 
             modelBuilder.Entity("l_hospital_mang.Data.Models.Doctors", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
 
-                    b.Property<int?>("ClinicId")
-                        .HasColumnType("int");
+                    b.Property<long?>("ClinicId")
+                        .HasColumnType("bigint");
 
                     b.Property<DateTime?>("CodeExpiresAt")
                         .HasColumnType("datetime2");
@@ -348,14 +353,15 @@ namespace l_hospital_mang.Migrations
 
             modelBuilder.Entity("l_hospital_mang.Data.Models.Employees", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
 
-                    b.Property<int>("Age")
-                        .HasColumnType("int");
+                    b.Property<DateTime?>("Age")
+                        .IsRequired()
+                        .HasColumnType("datetime2");
 
                     b.Property<DateTime?>("CodeExpiresAt")
                         .HasColumnType("datetime2");
@@ -408,8 +414,8 @@ namespace l_hospital_mang.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("TypeId")
-                        .HasColumnType("int");
+                    b.Property<long>("TypeId")
+                        .HasColumnType("bigint");
 
                     b.Property<string>("VerificationCode")
                         .IsRequired()
@@ -425,11 +431,11 @@ namespace l_hospital_mang.Migrations
 
             modelBuilder.Entity("l_hospital_mang.Data.Models.Medical_Health", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
 
                     b.Property<string>("Clinical_examination")
                         .IsRequired()
@@ -447,8 +453,8 @@ namespace l_hospital_mang.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("PatientId")
-                        .HasColumnType("int");
+                    b.Property<long>("PatientId")
+                        .HasColumnType("bigint");
 
                     b.Property<string>("Surveillance")
                         .IsRequired()
@@ -476,20 +482,19 @@ namespace l_hospital_mang.Migrations
 
             modelBuilder.Entity("l_hospital_mang.Data.Models.Radiography", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
 
-                    b.Property<int>("Age")
-                        .HasColumnType("int");
+                    b.Property<DateTime?>("Age")
+                        .HasColumnType("datetime2");
 
-                    b.Property<int>("Consulting_reservationId")
-                        .HasColumnType("int");
+                    b.Property<long>("Consulting_reservationId")
+                        .HasColumnType("bigint");
 
                     b.Property<string>("First_Name")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("ImagePath")
@@ -497,11 +502,9 @@ namespace l_hospital_mang.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Last_Name")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Middel_name")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<decimal>("Price")
@@ -517,20 +520,20 @@ namespace l_hospital_mang.Migrations
 
             modelBuilder.Entity("l_hospital_mang.Data.Models.Requests", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
 
-                    b.Property<int>("AmbulanceCarId")
-                        .HasColumnType("int");
+                    b.Property<long>("AmbulanceCarId")
+                        .HasColumnType("bigint");
 
                     b.Property<DateTime>("OrderTime")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("PatientId")
-                        .HasColumnType("int");
+                    b.Property<long>("PatientId")
+                        .HasColumnType("bigint");
 
                     b.Property<string>("PatientLocation")
                         .IsRequired()
@@ -552,11 +555,11 @@ namespace l_hospital_mang.Migrations
 
             modelBuilder.Entity("l_hospital_mang.Data.Models.Shifts", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
 
                     b.Property<int>("Day")
                         .HasColumnType("int");
@@ -578,11 +581,11 @@ namespace l_hospital_mang.Migrations
 
             modelBuilder.Entity("l_hospital_mang.Data.Models.Type", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -595,11 +598,11 @@ namespace l_hospital_mang.Migrations
 
             modelBuilder.Entity("l_hospital_mang.Data.Models.doctors_shifts", b =>
                 {
-                    b.Property<int>("DoctorId")
-                        .HasColumnType("int");
+                    b.Property<long>("DoctorId")
+                        .HasColumnType("bigint");
 
-                    b.Property<int>("ShiftId")
-                        .HasColumnType("int");
+                    b.Property<long>("ShiftId")
+                        .HasColumnType("bigint");
 
                     b.HasKey("DoctorId", "ShiftId");
 
@@ -610,11 +613,11 @@ namespace l_hospital_mang.Migrations
 
             modelBuilder.Entity("l_hospital_mang.Data.Models.invoice", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
 
                     b.Property<int>("Day")
                         .HasColumnType("int");
@@ -622,8 +625,8 @@ namespace l_hospital_mang.Migrations
                     b.Property<int>("Month")
                         .HasColumnType("int");
 
-                    b.Property<int>("ResidentPatientId")
-                        .HasColumnType("int");
+                    b.Property<long>("ResidentPatientId")
+                        .HasColumnType("bigint");
 
                     b.Property<string>("TimeOfDay")
                         .IsRequired()
@@ -644,14 +647,15 @@ namespace l_hospital_mang.Migrations
 
             modelBuilder.Entity("l_hospital_mang.Data.Models.patient", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
 
-                    b.Property<int>("Age")
-                        .HasColumnType("int");
+                    b.Property<DateTime?>("Age")
+                        .IsRequired()
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("First_Name")
                         .IsRequired()

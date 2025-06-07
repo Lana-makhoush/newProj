@@ -41,10 +41,12 @@ namespace l_hospital_mang.Controllers
                 return BadRequest(new { status = 400, message = "All fields are required." });
             }
 
-            if (!new EmailAddressAttribute().IsValid(dto.Email))
+            var emailRegex = new Regex(@"^[^@\s]+@[^@\s]+\.[^@\s]+$");
+            if (!emailRegex.IsMatch(dto.Email))
             {
                 return BadRequest(new { status = 400, message = "Invalid email format." });
             }
+
 
             if (!dto.PhoneNumber.All(char.IsDigit) || dto.PhoneNumber.Length < 8)
             {
@@ -196,8 +198,14 @@ namespace l_hospital_mang.Controllers
             return Ok(new { status = 200, message = "Verification code sent to your email." });
         }
 
+
+
+
         [HttpPost("reset-password")]
-        public async Task<IActionResult> ResetPassword([FromForm] string email, [FromForm] string verificationCode, [FromForm] string newPassword)
+        public async Task<IActionResult> ResetPassword(
+    [FromHeader(Name = "email")] string email,
+    [FromForm] string verificationCode,
+    [FromForm] string newPassword)
         {
             var doctor = await _context.Doctorss.FirstOrDefaultAsync(d => d.Email == email);
 
@@ -223,6 +231,7 @@ namespace l_hospital_mang.Controllers
 
             return Ok(new { status = 200, message = "Password has been reset successfully." });
         }
+
 
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromForm] DoctorLoginDto dto)
@@ -296,13 +305,11 @@ namespace l_hospital_mang.Controllers
                 return Unauthorized(new { status = 401, message = "User not authenticated." });
             }
 
-            // تحويل المعرف إلى int
             if (!int.TryParse(doctorIdClaim, out int doctorId))
             {
                 return BadRequest(new { status = 400, message = "Invalid user ID format." });
             }
 
-            // البحث عن الطبيب في قاعدة البيانات
             var doctor = await _context.Doctorss.FindAsync(doctorId);
 
             if (doctor == null)

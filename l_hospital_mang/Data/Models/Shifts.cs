@@ -6,7 +6,7 @@ namespace l_hospital_mang.Data.Models
     public class Shifts
     {
         [Key]
-        public int Id { get; set; }
+        public long Id { get; set; }
 
         [Range(1, 31, ErrorMessage = "Day must be between 1 and 31")]
         public int Day { get; set; }

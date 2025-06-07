@@ -2,7 +2,7 @@
 {
     public class RoomDto
     {
-        public int Id { get; set; }
+        public long Id { get; set; }
         public int? RoomNumber { get; set; }
         public int? FloorNumber { get; set; }
         public int? bedsNumber { get; set; }

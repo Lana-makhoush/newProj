@@ -4,7 +4,7 @@ namespace l_hospital_mang.Data.Models
 {
     public class Requests
     {
-        public int Id { get; set; }
+        public long Id { get; set; }
 
         public DateTime OrderTime { get; set; }
 
@@ -12,11 +12,11 @@ namespace l_hospital_mang.Data.Models
 
         public OrderStatus Status { get; set; }
         [ForeignKey("Patient")]
-        public int PatientId { get; set; }
+        public long PatientId { get; set; }
         public patient Patient { get; set; }
         //public invoice Invoice { get; set; }
         [ForeignKey("CAmbulance_Car")]
-        public int AmbulanceCarId { get; set; }
+        public long AmbulanceCarId { get; set; }
         public CAmbulance_Car AmbulanceCar { get; set; }
     }
 

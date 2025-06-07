@@ -17,7 +17,6 @@ namespace l_hospital_mang.Controllers
             _context = context;
         }
 
-        // POST: api/clinics/add-clinic
         [HttpPost("add-clinic")]
         public async Task<IActionResult> AddClinic([FromForm] Clinicscs clinic)
         {
@@ -58,6 +57,55 @@ namespace l_hospital_mang.Controllers
                 }
             });
         }
+        [HttpPut("update-clinic/{id}")]
+        public async Task<IActionResult> UpdateClinic(int id, [FromForm] Clinicscs updatedClinic)
+        {
+            var clinic = await _context.Clinicscss.FindAsync(id);
+            if (clinic == null)
+                return NotFound(new { statusCode = 404, message = "Clinic not found." });
+
+            if (string.IsNullOrWhiteSpace(updatedClinic.Clinic_Name))
+                return BadRequest(new { statusCode = 400, message = "Clinic name is required." });
+
+            var regex = new Regex(@"^[\p{L} ]+$");
+            if (!regex.IsMatch(updatedClinic.Clinic_Name))
+                return BadRequest(new { statusCode = 400, message = "Clinic name must contain letters only." });
+
+            bool nameExists = await _context.Clinicscss.AnyAsync(c =>
+                c.Clinic_Name == updatedClinic.Clinic_Name && c.Id != id);
+
+            if (nameExists)
+                return BadRequest(new { statusCode = 400, message = "Clinic name already exists." });
+
+            clinic.Clinic_Name = updatedClinic.Clinic_Name;
+
+            _context.Clinicscss.Update(clinic);
+            await _context.SaveChangesAsync();
+
+            return Ok(new
+            {
+                statusCode = 200,
+                message = "Clinic updated successfully.",
+                data = new
+                {
+                    clinic.Id,
+                    clinic.Clinic_Name
+                }
+            });
+        }
+        [HttpDelete("delete-clinic/{id}")]
+        public async Task<IActionResult> DeleteClinic(int id)
+        {
+            var clinic = await _context.Clinicscss.FindAsync(id);
+            if (clinic == null)
+                return NotFound(new { statusCode = 404, message = "Clinic not found." });
+
+            _context.Clinicscss.Remove(clinic);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { statusCode = 200, message = "Clinic deleted successfully." });
+        }
+
 
         [HttpGet("all-clinics")]
         public async Task<IActionResult> GetAllClinics()

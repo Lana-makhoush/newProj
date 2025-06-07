@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Threading.Tasks;
 using l_hospital_mang.Data;
 using System.Linq;
+using l_hospital_mang.DTOs;
 
 namespace l_hospital_mang.Controllers
 {
@@ -57,7 +58,7 @@ namespace l_hospital_mang.Controllers
                         patient.First_Name,
                         patient.Middel_name,
                         patient.Last_Name,
-                        patient.Age,
+                        Age = patient.Age?.ToString("yyyy-MM-dd"), 
                         patient.Residence,
                         patient.ID_Number,
                         patient.PhoneNumber
@@ -70,6 +71,114 @@ namespace l_hospital_mang.Controllers
                 {
                     StatusCode = 500,
                     Message = "An error occurred while saving the patient.",
+                    Error = ex.Message
+                });
+            }
+        }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateResidentPatient(int id, [FromForm] ResidentPatientUpdateDto dto)
+        {
+            var patient = await _context.Resident_patientss.FindAsync(id);
+
+            if (patient == null)
+                return NotFound(new { message = "Resident patient not found." });
+
+            if (!string.IsNullOrWhiteSpace(dto.First_Name))
+                patient.First_Name = dto.First_Name;
+
+            if (!string.IsNullOrWhiteSpace(dto.Middel_name))
+                patient.Middel_name = dto.Middel_name;
+
+            if (!string.IsNullOrWhiteSpace(dto.Last_Name))
+                patient.Last_Name = dto.Last_Name;
+
+            if (dto.Age.HasValue)
+            {
+                if (dto.Age.Value > DateTime.Now)
+                {
+                    return BadRequest(new { message = "Age cannot be a future date." });
+                }
+                patient.Age = dto.Age.Value;
+            }
+
+            if (!string.IsNullOrWhiteSpace(dto.Residence))
+                patient.Residence = dto.Residence;
+
+            if (!string.IsNullOrWhiteSpace(dto.ID_Number))
+                patient.ID_Number = dto.ID_Number;
+
+            if (!string.IsNullOrWhiteSpace(dto.PhoneNumber))
+                patient.PhoneNumber = dto.PhoneNumber;
+
+            if (dto.RoomId.HasValue)
+                patient.RoomId = dto.RoomId;
+
+            try
+            {
+                await _context.SaveChangesAsync();
+
+                return Ok(new
+                {
+                    StatusCode = 200,
+                    Message = "Resident patient updated successfully.",
+                    Data = new
+                    {
+                        patient.Id,
+                        patient.First_Name,
+                        patient.Middel_name,
+                        patient.Last_Name,
+                        Age = patient.Age?.ToString("yyyy-MM-dd"),
+                        patient.Residence,
+                        patient.ID_Number,
+                        patient.PhoneNumber,
+                        patient.RoomId
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    StatusCode = 500,
+                    Message = "Error updating resident patient.",
+                    Error = ex.Message
+                });
+            }
+        }
+
+
+        [HttpDelete("delete-patient/{id}")]
+        public async Task<IActionResult> DeleteResidentPatient(int id)
+        {
+            var patient = await _context.Resident_patientss.FindAsync(id);
+
+            if (patient == null)
+            {
+                return NotFound(new
+                {
+                    StatusCode = 404,
+                    Message = $"Patient with ID {id} not found."
+                });
+            }
+
+            try
+            {
+                _context.Resident_patientss.Remove(patient);
+                await _context.SaveChangesAsync();
+
+                return Ok(new
+                {
+                    StatusCode = 200,
+                    Message = "Resident patient deleted successfully."
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    StatusCode = 500,
+                    Message = "An error occurred while deleting the patient.",
                     Error = ex.Message
                 });
             }

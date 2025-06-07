@@ -6,7 +6,7 @@ namespace l_hospital_mang.Data.Models
     public class invoice
     {
         [Key]
-        public int Id { get; set; }
+        public long Id { get; set; }
 
         [Range(1, 31, ErrorMessage = "Day must be between 1 and 31")]
         public int Day { get; set; }
@@ -23,7 +23,7 @@ namespace l_hospital_mang.Data.Models
         [Range(0, double.MaxValue, ErrorMessage = "The total price must be a positive value")]
         public decimal TotalPrice { get; set; }
         [ForeignKey("Resident_patients")]
-        public int ResidentPatientId { get; set; }
+        public long ResidentPatientId { get; set; }
         public Resident_patients ResidentPatient { get; set; }
         //[ForeignKey("Requests")]
         //public int RequestId { get; set; }
