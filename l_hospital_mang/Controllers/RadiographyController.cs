@@ -46,7 +46,6 @@ namespace l_hospital_mang.Controllers
                 });
             }
 
-            // منع إضافة أكثر من صورة لنفس الحجز
             var existingRadiography = await _context.adiographyies
                 .AnyAsync(r => r.Consulting_reservationId == consultingReservationId);
 
