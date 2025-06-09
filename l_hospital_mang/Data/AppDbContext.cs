@@ -39,7 +39,8 @@ namespace l_hospital_mang.Data
         public DbSet<Models.Advertisments> Advertismentss { get; set; }
         public DbSet<Models.invoice> invoices { get; set; }
         public DbSet<Models.Type> Types { get; set; 
-        }
+ }
+        public DbSet<Models.surgery_reservations> surgery_reservationss {  get; set; }
 
         public DbSet<Rooms> Room { get; set; }
 
@@ -165,7 +166,28 @@ namespace l_hospital_mang.Data
     .HasOne(rp => rp.Room)
     .WithOne(r => r.Resident_patient)
     .HasForeignKey<Resident_patients>(rp => rp.RoomId)
-    .OnDelete(DeleteBehavior.Restrict); // اختياري حسب السلوك المطلوب
+    .OnDelete(DeleteBehavior.Restrict);
+
+            //one to many  بين المريض والسجل الطبي
+            modelBuilder.Entity<patient>()
+       .HasMany(p => p.Medical_Healths)    
+       .WithOne(mh => mh.Patient)          
+       .HasForeignKey(mh => mh.PatientId) 
+       .OnDelete(DeleteBehavior.Cascade);
+            //one to many  بين  الحجز الجراحي والمريض
+            modelBuilder.Entity<surgery_reservations>()
+                .HasOne(sr => sr.Patient)
+                .WithMany(p => p.SurgeryReservations)
+                .HasForeignKey(sr => sr.PatientId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            //one to many  بين الحجز الجراحي والطبيب
+            modelBuilder.Entity<surgery_reservations>()
+                .HasOne(sr => sr.Doctor)
+                .WithMany(d => d.SurgeryReservations)
+                .HasForeignKey(sr => sr.DoctorId)
+                .OnDelete(DeleteBehavior.Restrict); 
+
 
 
         }

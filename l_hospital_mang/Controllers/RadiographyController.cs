@@ -46,6 +46,19 @@ namespace l_hospital_mang.Controllers
                 });
             }
 
+            // منع إضافة أكثر من صورة لنفس الحجز
+            var existingRadiography = await _context.adiographyies
+                .AnyAsync(r => r.Consulting_reservationId == consultingReservationId);
+
+            if (existingRadiography)
+            {
+                return BadRequest(new
+                {
+                    StatusCode = 400,
+                    Message = "A radiography image for this consulting reservation already exists."
+                });
+            }
+
             var consultingReservation = await _context.Consulting_reservations
                 .Include(c => c.Patient)
                 .FirstOrDefaultAsync(c => c.Id == consultingReservationId);
@@ -59,7 +72,6 @@ namespace l_hospital_mang.Controllers
                 });
             }
 
-            // تحقق من وجود مجلد wwwroot/uploads
             if (string.IsNullOrEmpty(_env.WebRootPath))
             {
                 return StatusCode(500, new { Message = "WebRootPath is not configured." });
@@ -71,17 +83,14 @@ namespace l_hospital_mang.Controllers
                 Directory.CreateDirectory(uploadsFolder);
             }
 
-            // إنشاء اسم ملف فريد
             var uniqueFileName = Guid.NewGuid().ToString() + Path.GetExtension(dto.Image.FileName);
             var filePath = Path.Combine(uploadsFolder, uniqueFileName);
 
-            // حفظ الصورة في المسار
             using (var fileStream = new FileStream(filePath, FileMode.Create))
             {
                 await dto.Image.CopyToAsync(fileStream);
             }
 
-            // حفظ مسار الصورة نسبيًا (لنحفظ فقط المسار داخل wwwroot)
             var relativeImagePath = Path.Combine("uploads", uniqueFileName).Replace("\\", "/");
 
             var radiography = new Radiography
@@ -147,13 +156,11 @@ namespace l_hospital_mang.Controllers
                 });
             }
 
-            // تحديث السعر إذا تم إرساله
             if (dto.Price.HasValue)
             {
                 radiography.Price = dto.Price.Value;
             }
 
-            // تحديث الصورة إذا تم رفع صورة جديدة
             if (dto.Image != null && dto.Image.Length > 0 && dto.Image.ContentType.StartsWith("image/"))
             {
                 if (string.IsNullOrEmpty(_env.WebRootPath))
@@ -167,7 +174,6 @@ namespace l_hospital_mang.Controllers
                     Directory.CreateDirectory(uploadsFolder);
                 }
 
-                // حذف الصورة القديمة إذا كانت موجودة
                 if (!string.IsNullOrEmpty(radiography.ImagePath))
                 {
                     var oldImagePath = Path.Combine(_env.WebRootPath, radiography.ImagePath.Replace("/", Path.DirectorySeparatorChar.ToString()));
@@ -177,7 +183,6 @@ namespace l_hospital_mang.Controllers
                     }
                 }
 
-                // حفظ الصورة الجديدة
                 var uniqueFileName = Guid.NewGuid().ToString() + Path.GetExtension(dto.Image.FileName);
                 var filePath = Path.Combine(uploadsFolder, uniqueFileName);
 
@@ -233,7 +238,6 @@ namespace l_hospital_mang.Controllers
                 });
             }
 
-            // حذف الصورة من السيرفر إذا كانت موجودة
             if (!string.IsNullOrEmpty(radiography.ImagePath))
             {
                 var fullImagePath = Path.Combine(_env.WebRootPath, radiography.ImagePath.Replace("/", Path.DirectorySeparatorChar.ToString()));
@@ -330,6 +334,29 @@ namespace l_hospital_mang.Controllers
             });
         }
 
+        [HttpGet("radiographies/latest/{patientId}")]
+        public async Task<IActionResult> GetLatestTwoRadiographies(long patientId)
+        {
+            var radiographies = await _context.adiographyies
+                .Where(r => r.Consulting_reservation.PatientId == patientId)
+                .OrderByDescending(r => r.Id) // assuming Id increments over time
+                .Take(2)
+                .Select(r => new
+                {
+                    r.ImagePath,
+                    ImageFileName = Path.GetFileName(r.ImagePath)
+                })
+                .ToListAsync();
+
+            if (radiographies.Count == 0)
+                return NotFound(new { message = "No radiography images found for this patient." });
+
+            return Ok(new
+            {
+                message = "Latest two radiography images retrieved successfully.",
+                data = radiographies
+            });
+        }
 
 
 

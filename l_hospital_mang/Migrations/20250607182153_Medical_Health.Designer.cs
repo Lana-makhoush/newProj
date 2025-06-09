@@ -12,8 +12,8 @@ using l_hospital_mang.Data;
 namespace l_hospital_mang.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250606234401_patient")]
-    partial class patient
+    [Migration("20250607182153_Medical_Health")]
+    partial class Medical_Health
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -163,6 +163,9 @@ namespace l_hospital_mang.Migrations
                     b.Property<byte[]>("PdfFile")
                         .IsRequired()
                         .HasColumnType("varbinary(max)");
+
+                    b.Property<string>("PdfFilePath")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<decimal>("Price")
                         .HasColumnType("decimal(18,2)");
@@ -452,7 +455,7 @@ namespace l_hospital_mang.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<long>("PatientId")
+                    b.Property<long?>("PatientId")
                         .HasColumnType("bigint");
 
                     b.Property<string>("Surveillance")
@@ -473,8 +476,7 @@ namespace l_hospital_mang.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("PatientId")
-                        .IsUnique();
+                    b.HasIndex("PatientId");
 
                     b.ToTable("Medical_Healths");
                 });
@@ -488,14 +490,12 @@ namespace l_hospital_mang.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
 
                     b.Property<DateTime?>("Age")
-                        .IsRequired()
                         .HasColumnType("datetime2");
 
                     b.Property<long>("Consulting_reservationId")
                         .HasColumnType("bigint");
 
                     b.Property<string>("First_Name")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("ImagePath")
@@ -503,11 +503,9 @@ namespace l_hospital_mang.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Last_Name")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Middel_name")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<decimal>("Price")
@@ -778,10 +776,9 @@ namespace l_hospital_mang.Migrations
             modelBuilder.Entity("l_hospital_mang.Data.Models.Medical_Health", b =>
                 {
                     b.HasOne("l_hospital_mang.Data.Models.patient", "Patient")
-                        .WithOne("Medical_Health")
-                        .HasForeignKey("l_hospital_mang.Data.Models.Medical_Health", "PatientId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .WithMany("Medical_Healths")
+                        .HasForeignKey("PatientId")
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.Navigation("Patient");
                 });
@@ -903,8 +900,7 @@ namespace l_hospital_mang.Migrations
                 {
                     b.Navigation("Consulting_reservations");
 
-                    b.Navigation("Medical_Health")
-                        .IsRequired();
+                    b.Navigation("Medical_Healths");
 
                     b.Navigation("Requests")
                         .IsRequired();

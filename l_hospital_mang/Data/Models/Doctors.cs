@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace l_hospital_mang.Data.Models
 {
@@ -64,5 +65,8 @@ namespace l_hospital_mang.Data.Models
         public DateTime? LastLoginAt { get; set; }
 
         public DateTime? CreatedAt { get; set; } = DateTime.UtcNow;
+        [JsonIgnore]
+        public virtual ICollection<surgery_reservations> SurgeryReservations { get; set; } = new List<surgery_reservations>();
+
     }
 }

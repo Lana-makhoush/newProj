@@ -303,6 +303,33 @@ namespace l_hospital_mang.Controllers
 
             return Ok(result);
         }
+        [HttpGet("patients/{patientId}/latest-analyses/pdfs")]
+        public async Task<IActionResult> GetLatestTwoAnalysisPdfs(long patientId)
+        {
+            var pdfFiles = await _context.Analysiss
+                .Include(a => a.Consulting_reservation)
+                .Where(a => a.Consulting_reservation.PatientId == patientId)
+                .OrderByDescending(a => a.Id)
+                .Take(2)
+                .Select(a => a.PdfFile)
+                .ToListAsync();
+
+            if (!pdfFiles.Any())
+            {
+                return NotFound(new { message = "No analyses found to display." });
+            }
+
+            var base64Pdfs = pdfFiles
+                .Where(p => p != null)
+                .Select(p => Convert.ToBase64String(p))
+                .ToList();
+
+            return Ok(new
+            {
+                message = "Latest two analyses retrieved successfully.",
+                pdfs = base64Pdfs
+            });
+        }
 
 
     }

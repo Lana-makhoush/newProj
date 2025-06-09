@@ -1,11 +1,9 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 
-namespace l_hospital_mang.Data.Models
+namespace l_hospital_mang.DTOs
 {
-    public class Medical_Health
+    public class MedicalHealthDTO
     {
-        [Key]
         public long Id { get; set; }
 
         [Required]
@@ -40,9 +38,9 @@ namespace l_hospital_mang.Data.Models
         [RegularExpression(@"^[\p{L}\s]+$", ErrorMessage = "Notes must contain letters only.")]
         public string notes { get; set; }
 
-        [ForeignKey("Patient")]
         public long? PatientId { get; set; }
 
-        public patient? Patient { get; set; }
+        // Optional: Include patient's name if needed for response
+        public PatientDTO? Patient { get; set; }
     }
 }

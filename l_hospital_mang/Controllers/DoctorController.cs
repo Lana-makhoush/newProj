@@ -333,7 +333,7 @@ namespace l_hospital_mang.Controllers
             });
         }
 
-        [Authorize]
+       
         [Authorize]
         [HttpPost("update-doctor-profile")]
         public async Task<IActionResult> UpdateDoctorProfile([FromForm] DoctorProfileUpdateDto dto)
@@ -369,6 +369,86 @@ namespace l_hospital_mang.Controllers
 
             return Ok(new { status = 200, message = "Doctor profile updated successfully." });
         }
+
+        [HttpGet("doctors/simple-list")]
+        public async Task<ActionResult<IEnumerable<object>>> GetDoctorsSimpleList()
+        {
+            var doctors = await _context.Doctorss
+                .Select(d => new
+                {
+                    d.Id,
+                    FullName = $"{d.First_Name} {d.Middel_name} {d.Last_Name}"
+                })
+                .ToListAsync();
+
+            return Ok(doctors);
+        }
+        [HttpPut("surgery-reservations/{reservationId}/assign-doctor/{doctorId}")]
+        public async Task<IActionResult> AssignDoctorToReservation(long reservationId, long doctorId)
+        {
+            // جلب الحجز مع الطبيب والمريض
+            var reservation = await _context.surgery_reservationss
+                .Include(r => r.Doctor)
+                .Include(r => r.Patient)
+                .FirstOrDefaultAsync(r => r.Id == reservationId);
+
+            if (reservation == null)
+                return NotFound(new { message = "Surgery reservation not found." });
+
+            var doctor = await _context.Doctorss.FindAsync(doctorId);
+            if (doctor == null)
+                return NotFound(new { message = "Doctor not found." });
+
+            // تحديث معرف الطبيب في الحجز
+            reservation.DoctorId = doctorId;
+
+            // حفظ التغييرات في قاعدة البيانات
+            await _context.SaveChangesAsync();
+
+            // إعادة الرد مع البيانات المطلوبة فقط
+            return Ok(new
+            {
+                message = "Doctor assigned to surgery reservation successfully.",
+                data = new
+                {
+                    reservation.Id,
+                    reservation.PatientId,
+                    patient = reservation.Patient == null ? null : new
+                    {
+                        reservation.Patient.Id,
+                        reservation.Patient.First_Name,
+                        reservation.Patient.Middel_name,
+                        reservation.Patient.Last_Name,
+                        reservation.Patient.PhoneNumber,
+                        reservation.Patient.Residence,
+                        Age = reservation.Patient.Age.HasValue
+                            ? reservation.Patient.Age.Value.ToString("dd/MM/yyyy")
+                            : null
+                    },
+                    reservation.DoctorId,
+                    doctor = new
+                    {
+                        Id = doctor.Id,
+                        FullName = $"{doctor.First_Name} {doctor.Middel_name} {doctor.Last_Name}"
+                    },
+                    reservation.SurgeryDate,
+                    reservation.SurgeryTime,
+                    reservation.SurgeryType,
+                    reservation.Price
+                }
+            });
+        }
+
+
+
+
+
+
+
+
+
+
+
 
     }
 }

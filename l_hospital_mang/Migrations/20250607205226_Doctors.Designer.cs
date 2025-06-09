@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using l_hospital_mang.Data;
 
@@ -11,9 +12,11 @@ using l_hospital_mang.Data;
 namespace l_hospital_mang.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250607205226_Doctors")]
+    partial class Doctors
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -695,7 +698,7 @@ namespace l_hospital_mang.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
 
-                    b.Property<long?>("DoctorId")
+                    b.Property<long>("DoctorId")
                         .HasColumnType("bigint");
 
                     b.Property<long>("PatientId")
@@ -706,10 +709,6 @@ namespace l_hospital_mang.Migrations
 
                     b.Property<DateTime>("SurgeryDate")
                         .HasColumnType("datetime2");
-
-                    b.Property<string>("SurgeryTime")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("SurgeryType")
                         .IsRequired()
@@ -722,7 +721,7 @@ namespace l_hospital_mang.Migrations
 
                     b.HasIndex("PatientId");
 
-                    b.ToTable("surgery_reservationss");
+                    b.ToTable("surgery_reservations");
                 });
 
             modelBuilder.Entity("Resident_patients", b =>
@@ -883,7 +882,8 @@ namespace l_hospital_mang.Migrations
                     b.HasOne("l_hospital_mang.Data.Models.Doctors", "Doctor")
                         .WithMany("SurgeryReservations")
                         .HasForeignKey("DoctorId")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("l_hospital_mang.Data.Models.patient", "Patient")
                         .WithMany("SurgeryReservations")

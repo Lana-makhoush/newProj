@@ -35,8 +35,11 @@ namespace l_hospital_mang.Data.Models
 
         public string ImagePath { get; set; }
         public ICollection<Consulting_reservation> Consulting_reservations { get; set; }
-        public Medical_Health Medical_Health { get; set; }
+        public ICollection<Medical_Health> Medical_Healths { get; set; }
+
         public Requests Requests { get; set; }
+        public virtual ICollection<surgery_reservations> SurgeryReservations { get; set; } = new List<surgery_reservations>();
+
 
     }
 }

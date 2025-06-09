@@ -12,8 +12,8 @@ using l_hospital_mang.Data;
 namespace l_hospital_mang.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250606234211_Doctors")]
-    partial class Doctors
+    [Migration("20250608202629_Surgery_reservation")]
+    partial class Surgery_reservation
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -163,6 +163,9 @@ namespace l_hospital_mang.Migrations
                     b.Property<byte[]>("PdfFile")
                         .IsRequired()
                         .HasColumnType("varbinary(max)");
+
+                    b.Property<string>("PdfFilePath")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<decimal>("Price")
                         .HasColumnType("decimal(18,2)");
@@ -452,7 +455,7 @@ namespace l_hospital_mang.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<long>("PatientId")
+                    b.Property<long?>("PatientId")
                         .HasColumnType("bigint");
 
                     b.Property<string>("Surveillance")
@@ -473,8 +476,7 @@ namespace l_hospital_mang.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("PatientId")
-                        .IsUnique();
+                    b.HasIndex("PatientId");
 
                     b.ToTable("Medical_Healths");
                 });
@@ -488,14 +490,12 @@ namespace l_hospital_mang.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
 
                     b.Property<DateTime?>("Age")
-                        .IsRequired()
                         .HasColumnType("datetime2");
 
                     b.Property<long>("Consulting_reservationId")
                         .HasColumnType("bigint");
 
                     b.Property<string>("First_Name")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("ImagePath")
@@ -503,11 +503,9 @@ namespace l_hospital_mang.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Last_Name")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Middel_name")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<decimal>("Price")
@@ -692,6 +690,44 @@ namespace l_hospital_mang.Migrations
                     b.ToTable("Patients");
                 });
 
+            modelBuilder.Entity("l_hospital_mang.Data.Models.surgery_reservations", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<long?>("DoctorId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("PatientId")
+                        .HasColumnType("bigint");
+
+                    b.Property<decimal>("Price")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("SurgeryDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("SurgeryTime")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("SurgeryType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DoctorId");
+
+                    b.HasIndex("PatientId");
+
+                    b.ToTable("surgery_reservationss");
+                });
+
             modelBuilder.Entity("Resident_patients", b =>
                 {
                     b.HasOne("Rooms", "Room")
@@ -778,10 +814,9 @@ namespace l_hospital_mang.Migrations
             modelBuilder.Entity("l_hospital_mang.Data.Models.Medical_Health", b =>
                 {
                     b.HasOne("l_hospital_mang.Data.Models.patient", "Patient")
-                        .WithOne("Medical_Health")
-                        .HasForeignKey("l_hospital_mang.Data.Models.Medical_Health", "PatientId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .WithMany("Medical_Healths")
+                        .HasForeignKey("PatientId")
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.Navigation("Patient");
                 });
@@ -846,6 +881,24 @@ namespace l_hospital_mang.Migrations
                     b.Navigation("ResidentPatient");
                 });
 
+            modelBuilder.Entity("l_hospital_mang.Data.Models.surgery_reservations", b =>
+                {
+                    b.HasOne("l_hospital_mang.Data.Models.Doctors", "Doctor")
+                        .WithMany("SurgeryReservations")
+                        .HasForeignKey("DoctorId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("l_hospital_mang.Data.Models.patient", "Patient")
+                        .WithMany("SurgeryReservations")
+                        .HasForeignKey("PatientId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Doctor");
+
+                    b.Navigation("Patient");
+                });
+
             modelBuilder.Entity("Resident_patients", b =>
                 {
                     b.Navigation("Invoices");
@@ -886,6 +939,8 @@ namespace l_hospital_mang.Migrations
                     b.Navigation("Dates");
 
                     b.Navigation("DoctorShifts");
+
+                    b.Navigation("SurgeryReservations");
                 });
 
             modelBuilder.Entity("l_hospital_mang.Data.Models.Shifts", b =>
@@ -903,11 +958,12 @@ namespace l_hospital_mang.Migrations
                 {
                     b.Navigation("Consulting_reservations");
 
-                    b.Navigation("Medical_Health")
-                        .IsRequired();
+                    b.Navigation("Medical_Healths");
 
                     b.Navigation("Requests")
                         .IsRequired();
+
+                    b.Navigation("SurgeryReservations");
                 });
 #pragma warning restore 612, 618
         }

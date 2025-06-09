@@ -5,7 +5,7 @@
 namespace l_hospital_mang.Migrations
 {
     /// <inheritdoc />
-    public partial class Medical_Health : Migration
+    public partial class Surgery_reservation : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
