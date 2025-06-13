@@ -9,12 +9,15 @@ namespace l_hospital_mang.Data.Models
         [Key]
         public long Id { get; set; }
         [Required(ErrorMessage = "The value is required.")]
+        [RegularExpression("^[A-Za-zأ-ي]+$", ErrorMessage = "First name must contain only letters.")]
 
         public string First_Name { get; set; }
         [Required(ErrorMessage = "The value is required.")]
+        [RegularExpression("^[A-Za-zأ-ي]+$", ErrorMessage = "Middle name must contain only letters.")]
 
         public string Middel_name { get; set; }
         [Required(ErrorMessage = "The value is required.")]
+        [RegularExpression("^[A-Za-zأ-ي]+$", ErrorMessage = "last name must contain only letters.")]
 
         public string Last_Name { get; set; }
         [Required(ErrorMessage = "The value is required.")]
@@ -22,8 +25,7 @@ namespace l_hospital_mang.Data.Models
         [DataType(DataType.Date)]
         public DateTime? Age { get; set; }
 
-        [Required(ErrorMessage = "The value is required.")]
-        public string Residence { get; set; }
+        public string? Residence { get; set; }
         [Required(ErrorMessage = "The value is required.")]
         [Range(0, int.MaxValue, ErrorMessage = "The value must be positive.")]
         public int ID_Number { set; get; }
@@ -31,13 +33,13 @@ namespace l_hospital_mang.Data.Models
         [RegularExpression(@"^\d{10}$", ErrorMessage = "Phone number must be exactly 10 digits.")]
         public string PhoneNumber { get; set; }
         [NotMapped]
-        public IFormFile Image { get; set; }
+        public IFormFile? Image { get; set; }
 
-        public string ImagePath { get; set; }
-        public byte[] PdfFile { get; set; }
+        public string? ImagePath { get; set; }
+        public byte[]? PdfFile { get; set; }
         [ForeignKey("TypeId")]
-        public long TypeId { get; set; }
-        public Type Type { get; set; }
+        public long? TypeId { get; set; }
+        public Type? Type { get; set; }
         [Required(ErrorMessage = "Email is required.")]
         [EmailAddress(ErrorMessage = "Invalid email address.")]
         public string Email { get; set; }
@@ -47,13 +49,18 @@ namespace l_hospital_mang.Data.Models
 
         public bool IsVerified { get; set; } = false;
 
-        public string VerificationCode { get; set; }
+        public string? VerificationCode { get; set; }
 
         public DateTime? CodeExpiresAt { get; set; }
 
         public DateTime? LastLoginAt { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        public string? RefreshToken { get; set; }
+        public DateTime? RefreshTokenExpiryTime { get; set; }
+        public string? IdentityUserId { get; set; }
+
 
     }
 }

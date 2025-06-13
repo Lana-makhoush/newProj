@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using l_hospital_mang.Data;
 using System.Linq;
 using l_hospital_mang.DTOs;
+using Microsoft.AspNetCore.Authorization;
 
 namespace l_hospital_mang.Controllers
 {
@@ -18,7 +19,7 @@ namespace l_hospital_mang.Controllers
         {
             _context = context;
         }
-
+        [Authorize(Roles = "Receptionist")]
         [HttpPost("add-patient-simple")]
         public async Task<IActionResult> AddResidentPatientSimple([FromForm] Resident_patients patient)
         {
@@ -75,9 +76,10 @@ namespace l_hospital_mang.Controllers
                 });
             }
         }
+        [Authorize(Roles = "Receptionist")]
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateResidentPatient(int id, [FromForm] ResidentPatientUpdateDto dto)
+        public async Task<IActionResult> UpdateResidentPatient(long id, [FromForm] ResidentPatientUpdateDto dto)
         {
             var patient = await _context.Resident_patientss.FindAsync(id);
 
@@ -147,9 +149,10 @@ namespace l_hospital_mang.Controllers
             }
         }
 
+        [Authorize(Roles = "Receptionist")]
 
         [HttpDelete("delete-patient/{id}")]
-        public async Task<IActionResult> DeleteResidentPatient(int id)
+        public async Task<IActionResult> DeleteResidentPatient(long id)
         {
             var patient = await _context.Resident_patientss.FindAsync(id);
 
@@ -216,7 +219,7 @@ namespace l_hospital_mang.Controllers
 
 
         [HttpPost("submit-selection/{RoomId}/{ResidentPatientId}")]
-        public async Task<IActionResult> SubmitSelection([FromRoute] int RoomId, [FromRoute] int ResidentPatientId)
+        public async Task<IActionResult> SubmitSelection([FromRoute] long RoomId, [FromRoute] long ResidentPatientId)
         {
             var patient = await _context.Resident_patientss.FindAsync(ResidentPatientId);
             if (patient == null)

@@ -1,4 +1,4 @@
-﻿using l_hospital_mang.Migrations;
+﻿//using l_hospital_mang.Migrations;
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -12,27 +12,27 @@ namespace l_hospital_mang.Data.Models
         public long Id { get; set; }
 
         [Required]
-        public long PatientId { get; set; } 
+        public long PatientId { get; set; }
 
         [ForeignKey("PatientId")]
-        public virtual patient Patient { get; set; } 
+        public virtual patient Patient { get; set; }
 
-       
-        public long? DoctorId { get; set; }  
+
+        public long? DoctorId { get; set; }
 
         [ForeignKey("DoctorId")]
-        public virtual Doctors Doctor { get; set; }  
+        public virtual Doctors Doctor { get; set; }
 
         [Required]
-        [DataType(DataType.Date)] 
+        [DataType(DataType.Date)]
         public DateTime SurgeryDate { get; set; }
         public String SurgeryTime { get; set; }
         [Required]
         [StringLength(100, MinimumLength = 3)]
-        public string SurgeryType { get; set; }  
+        public string SurgeryType { get; set; }
 
         [Required]
         [Range(0, double.MaxValue, ErrorMessage = "Price must be a positive value.")]
-        public decimal Price { get; set; }  
+        public decimal Price { get; set; }
     }
 }

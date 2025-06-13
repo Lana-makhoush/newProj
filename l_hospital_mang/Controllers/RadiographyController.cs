@@ -8,6 +8,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using l_hospital_mang.Data.Models;
 using l_hospital_mang.Data;
+using Microsoft.AspNetCore.Authorization;
 
 namespace l_hospital_mang.Controllers
 {
@@ -23,6 +24,7 @@ namespace l_hospital_mang.Controllers
             _context = context;
             _env = env;
         }
+        [Authorize(Roles = "Doctor")]
 
         [HttpPost("add/{consultingReservationId}")]
         public async Task<IActionResult> AddRadiography([FromRoute] long consultingReservationId, [FromForm] RadiographyDto dto)
@@ -46,7 +48,7 @@ namespace l_hospital_mang.Controllers
                 });
             }
 
-            var existingRadiography = await _context.adiographyies
+            var existingRadiography = await _context.Radiographyies
                 .AnyAsync(r => r.Consulting_reservationId == consultingReservationId);
 
             if (existingRadiography)
@@ -105,7 +107,7 @@ namespace l_hospital_mang.Controllers
 
             try
             {
-                _context.adiographyies.Add(radiography);
+                _context.Radiographyies.Add(radiography);
                 await _context.SaveChangesAsync();
 
                 return Ok(new
@@ -137,11 +139,12 @@ namespace l_hospital_mang.Controllers
         }
 
 
+        [Authorize(Roles = "Doctor")]
 
         [HttpPut("update/{id}")]
         public async Task<IActionResult> UpdateRadiography([FromRoute] long id, [FromForm] RadiographyUpdateDto dto)
         {
-            var radiography = await _context.adiographyies
+            var radiography = await _context.Radiographyies
                 .Include(r => r.Consulting_reservation)
                 .ThenInclude(c => c.Patient)
                 .FirstOrDefaultAsync(r => r.Id == id);
@@ -224,10 +227,12 @@ namespace l_hospital_mang.Controllers
                 });
             }
         }
+        [Authorize(Roles = "Doctor")]
+
         [HttpDelete("delete/{id}")]
         public async Task<IActionResult> DeleteRadiography([FromRoute] long id)
         {
-            var radiography = await _context.adiographyies.FindAsync(id);
+            var radiography = await _context.Radiographyies.FindAsync(id);
             if (radiography == null)
             {
                 return NotFound(new
@@ -246,7 +251,7 @@ namespace l_hospital_mang.Controllers
                 }
             }
 
-            _context.adiographyies.Remove(radiography);
+            _context.Radiographyies.Remove(radiography);
 
             try
             {
@@ -270,7 +275,7 @@ namespace l_hospital_mang.Controllers
         [HttpGet("all")]
         public async Task<IActionResult> GetAllRadiographies()
         {
-            var radiographies = await _context.adiographyies.ToListAsync();
+            var radiographies = await _context.Radiographyies.ToListAsync();
 
             if (radiographies == null || !radiographies.Any())
             {
@@ -304,7 +309,7 @@ namespace l_hospital_mang.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> GetRadiographyById([FromRoute] long id)
         {
-            var radiography = await _context.adiographyies.FindAsync(id);
+            var radiography = await _context.Radiographyies.FindAsync(id);
 
             if (radiography == null)
             {
@@ -336,9 +341,9 @@ namespace l_hospital_mang.Controllers
         [HttpGet("radiographies/latest/{patientId}")]
         public async Task<IActionResult> GetLatestTwoRadiographies(long patientId)
         {
-            var radiographies = await _context.adiographyies
+            var radiographies = await _context.Radiographyies
                 .Where(r => r.Consulting_reservation.PatientId == patientId)
-                .OrderByDescending(r => r.Id) // assuming Id increments over time
+                .OrderByDescending(r => r.Id)
                 .Take(2)
                 .Select(r => new
                 {

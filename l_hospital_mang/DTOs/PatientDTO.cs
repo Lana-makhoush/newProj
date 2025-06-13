@@ -28,8 +28,9 @@ namespace l_hospital_mang.DTOs
         public string Residence { get; set; }
 
         [Required(ErrorMessage = "ID Number is required.")]
-        [Range(0, int.MaxValue, ErrorMessage = "The value must be positive.")]
-        public int ID_Number { get; set; }
+        [RegularExpression(@"^\d{11}$", ErrorMessage = "ID number must be exactly 11 digits.")]
+
+        public string ID_Number { get; set; }
 
         [Required(ErrorMessage = "Phone number is required.")]
         [RegularExpression(@"^\d{10}$", ErrorMessage = "Phone number must be exactly 10 digits.")]
@@ -39,7 +40,6 @@ namespace l_hospital_mang.DTOs
 
         public IFormFile? Image { get; set; }
 
-        // Optional: Navigation properties if needed
         [JsonIgnore]
         public ICollection<MedicalHealthDTO>? Medical_Healths { get; set; }
     }

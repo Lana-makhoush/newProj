@@ -8,7 +8,7 @@ public class SurgeryReservationDTO
 
     [Required(ErrorMessage = "SurgeryDate is required.")]
     [JsonConverter(typeof(l_hospital_mang.DateOnlyJsonConverter))]
-    public DateTime? SurgeryDate { get; set; }  // Nullable
+    public DateTime? SurgeryDate { get; set; } 
 
     [Required(ErrorMessage = "SurgeryTime is required.")]
     public string SurgeryTime { get; set; }

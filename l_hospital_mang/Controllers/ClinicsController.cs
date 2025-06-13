@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Threading.Tasks;
 using l_hospital_mang.Data;
 using System.Text.RegularExpressions;
+using Microsoft.AspNetCore.Authorization;
 namespace l_hospital_mang.Controllers
 {
     [ApiController]
@@ -16,7 +17,7 @@ namespace l_hospital_mang.Controllers
         {
             _context = context;
         }
-
+        [Authorize(Roles = "Receptionist")]
         [HttpPost("add-clinic")]
         public async Task<IActionResult> AddClinic([FromForm] Clinicscs clinic)
         {
@@ -57,8 +58,9 @@ namespace l_hospital_mang.Controllers
                 }
             });
         }
+        [Authorize(Roles = "Receptionist")]
         [HttpPut("update-clinic/{id}")]
-        public async Task<IActionResult> UpdateClinic(int id, [FromForm] Clinicscs updatedClinic)
+        public async Task<IActionResult> UpdateClinic(long id, [FromForm] Clinicscs updatedClinic)
         {
             var clinic = await _context.Clinicscss.FindAsync(id);
             if (clinic == null)
@@ -93,8 +95,10 @@ namespace l_hospital_mang.Controllers
                 }
             });
         }
+        [Authorize(Roles = "Receptionist")]
+
         [HttpDelete("delete-clinic/{id}")]
-        public async Task<IActionResult> DeleteClinic(int id)
+        public async Task<IActionResult> DeleteClinic(long id)
         {
             var clinic = await _context.Clinicscss.FindAsync(id);
             if (clinic == null)

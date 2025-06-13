@@ -1,6 +1,7 @@
 ﻿using l_hospital_mang.Data;
 using l_hospital_mang.Data.Models;
 using l_hospital_mang.DTOs;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -20,6 +21,7 @@ namespace l_hospital_mang.Controllers
         {
             _context = context;
         }
+        [Authorize(Roles = "Doctor,Manager")]
 
         [HttpPost("surgery-reservations/add/{patientId}")]
         public async Task<IActionResult> AddSurgeryReservation(long patientId, [FromForm] SurgeryReservationDTO model)
@@ -42,7 +44,6 @@ namespace l_hospital_mang.Controllers
             if (string.IsNullOrWhiteSpace(model.SurgeryTime))
                 return BadRequest(new { message = "SurgeryTime is required." });
 
-            // نحلل الوقت الجديد بصيغة دقيقة
             if (!DateTime.TryParseExact(model.SurgeryTime.Trim(), "hh:mm tt", CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedTime))
                 return BadRequest(new { message = "Invalid time format. Use hh:mm AM/PM." });
 
@@ -69,7 +70,6 @@ namespace l_hospital_mang.Controllers
 
                 foreach (var r in reservationsForDoctor)
                 {
-                    // نحاول تحليل الوقت الحالي من السجل
                     if (DateTime.TryParseExact(r.SurgeryTime?.Trim(), "hh:mm tt", CultureInfo.InvariantCulture, DateTimeStyles.None, out var existingTime))
                     {
                         var existingDateTime = r.SurgeryDate.Date.Add(existingTime.TimeOfDay);
@@ -119,6 +119,7 @@ namespace l_hospital_mang.Controllers
         }
 
 
+        [Authorize(Roles = "Doctor,Manager")]
 
         [HttpPut("surgery-reservations/{reservationId}/assign-doctor/{doctorId}")]
         public async Task<IActionResult> AssignDoctorToReservation(long reservationId, long doctorId)
@@ -135,11 +136,9 @@ namespace l_hospital_mang.Controllers
             if (doctor == null)
                 return NotFound(new { message = "Doctor not found." });
 
-            // تحديث الطبيب
             reservation.DoctorId = doctorId;
             await _context.SaveChangesAsync();
 
-            // إعادة البيانات المطلوبة فقط
             return Ok(new
             {
                 message = "Doctor assigned to surgery reservation successfully.",
@@ -157,7 +156,7 @@ namespace l_hospital_mang.Controllers
                         reservation.Patient.Residence,
                         reservation.Patient.ID_Number,
                         reservation.Patient.PhoneNumber,
-                      
+
                     },
                     reservation.DoctorId,
                     doctor = new
@@ -172,6 +171,8 @@ namespace l_hospital_mang.Controllers
                 }
             });
         }
+        [Authorize(Roles = "Doctor,Manager")]
+
         [HttpPut("surgery-reservations/edit/{reservationId}/assign-doctor/{doctorId}")]
         public async Task<IActionResult> EditSurgeryReservation(long reservationId, long doctorId, [FromForm] EditSurgeryReservationDTO model)
         {
@@ -186,7 +187,7 @@ namespace l_hospital_mang.Controllers
             if (doctor == null)
                 return NotFound(new { message = "Doctor not found." });
 
-            reservation.DoctorId = doctorId; // نحفظ المعرف القادم من الرابط
+            reservation.DoctorId = doctorId;
 
             if (model.SurgeryDate.HasValue)
             {
@@ -237,6 +238,8 @@ namespace l_hospital_mang.Controllers
                 }
             });
         }
+        [Authorize(Roles = "Doctor,Manager")]
+
         [HttpDelete("surgery-reservations/delete/{reservationId}")]
         public async Task<IActionResult> DeleteSurgeryReservation(long reservationId)
         {

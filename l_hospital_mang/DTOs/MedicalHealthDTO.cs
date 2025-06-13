@@ -40,7 +40,6 @@ namespace l_hospital_mang.DTOs
 
         public long? PatientId { get; set; }
 
-        // Optional: Include patient's name if needed for response
         public PatientDTO? Patient { get; set; }
     }
 }

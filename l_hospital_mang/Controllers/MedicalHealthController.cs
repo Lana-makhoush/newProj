@@ -3,6 +3,7 @@ using l_hospital_mang.Data;
 using l_hospital_mang.Data.Models;
 using Microsoft.EntityFrameworkCore;
 using l_hospital_mang.DTOs;
+using Microsoft.AspNetCore.Authorization;
 
 namespace l_hospital_mang.Controllers
 {
@@ -16,6 +17,7 @@ namespace l_hospital_mang.Controllers
         {
             _context = context;
         }
+        [Authorize(Roles = "Doctor,Manager")]
 
         [HttpPost("{patientId}")]
         public async Task<IActionResult> AddMedicalRecord(long patientId, [FromForm] MedicalHealthDTO model)
@@ -72,6 +74,7 @@ namespace l_hospital_mang.Controllers
                 }
             });
         }
+        [Authorize(Roles = "Doctor,Manager")]
 
         [HttpPut("{patientId}/medical-record/{id}")]
         public async Task<IActionResult> UpdateMedicalRecord(long patientId, long id, [FromForm] UpdateMedicalHealthDTO dto)
@@ -209,6 +212,8 @@ namespace l_hospital_mang.Controllers
 
             return Ok(dtoList);
         }
+        [Authorize(Roles = "Doctor,Manager")]
+
 
         [HttpDelete("delete/{id}")]
         public async Task<IActionResult> DeleteMedicalHealth(long id)

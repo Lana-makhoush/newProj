@@ -1,62 +1,49 @@
 ﻿using l_hospital_mang.Data.Models;
-
-//using l_hospital_mang.Migrations;
 using Microsoft.EntityFrameworkCore;
-using CAmbulance_Car = l_hospital_mang.Data.Models.CAmbulance_Car;
-using Consulting_reservation = l_hospital_mang.Data.Models.Consulting_reservation;
-using Dates = l_hospital_mang.Data.Models.Dates;
-using Doctors = l_hospital_mang.Data.Models.Doctors;
-using doctors_shifts = l_hospital_mang.Data.Models.doctors_shifts;
-using Employees = l_hospital_mang.Data.Models.Employees;
-using invoice = l_hospital_mang.Data.Models.invoice;
-using Medical_Health = l_hospital_mang.Data.Models.Medical_Health;
-using Radiography = l_hospital_mang.Data.Models.Radiography;
-//using Resident_patients = l_hospital_mang.Data.Models.Resident_patients;
-//using Rooms = l_hospital_mang.Data.Models.Rooms;
-
+using Type = l_hospital_mang.Data.Models.Type;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 
 namespace l_hospital_mang.Data
 {
-    public class AppDbContext : DbContext
+    public class AppDbContext : IdentityDbContext<IdentityUser, IdentityRole, string>
     {
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
         {
         }
 
+
         public DbSet<Medical_Health> Medical_Healths { get; set; }
-        public DbSet<Models.Clinicscs> Clinicscss { get; set; }
-        public DbSet<Models.patient> Patients { get; set; }
+        public DbSet<Clinicscs> Clinicscss { get; set; }
+        public DbSet<patient> Patients { get; set; }
         public DbSet<Resident_patients> Resident_patientss { get; set; }
-        public DbSet<Models.Dates> Datess { get; set; }
-        public DbSet<Models.Consulting_reservation> Consulting_reservations { get; set; }
-        public DbSet<Models.Doctors> Doctorss { get; set; }
-        public DbSet<Models.Shifts> Shiftss { get; set; }
-        public DbSet<Models.Requests> Requestss { get; set; }
-        public DbSet<Models.CAmbulance_Car> CAmbulance_Carس { get; set; }
-        public DbSet<Models.Employees> Employeess { get; set; }
-        public DbSet<Models.Analysis> Analysiss { get; set; }
-        public DbSet<Models.Radiography> adiographyies { get; set; }
-        public DbSet<Models.Advertisments> Advertismentss { get; set; }
-        public DbSet<Models.invoice> invoices { get; set; }
-        public DbSet<Models.Type> Types { get; set; 
- }
-        public DbSet<Models.surgery_reservations> surgery_reservationss {  get; set; }
-
+        public DbSet<Dates> Datess { get; set; }
+        public DbSet<Consulting_reservation> Consulting_reservations { get; set; }
+        public DbSet<Doctors> Doctorss { get; set; }
+        public DbSet<Shifts> Shiftss { get; set; }
+        public DbSet<Requests> Requestss { get; set; }
+        public DbSet<CAmbulance_Car> CAmbulance_Car { get; set; }
+        public DbSet<Employees> Employeess { get; set; }
+        public DbSet<Analysis> Analysiss { get; set; }
+        public DbSet<Radiography> Radiographyies { get; set; }
+        public DbSet<Advertisments> Advertismentss { get; set; }
+        public DbSet<invoice> invoices { get; set; }
+        public DbSet<Type> Types { get; set; }
+        public DbSet<surgery_reservations> surgery_reservationss { get; set; }
         public DbSet<Rooms> Room { get; set; }
-
-
+       
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
 
             // علاقة one to many بين المريض والحجوزات
-            modelBuilder.Entity<Models.Consulting_reservation>()
+            modelBuilder.Entity<Consulting_reservation>()
                 .HasOne(r => r.Patient)
                 .WithMany(p => p.Consulting_reservations)
                 .HasForeignKey(r => r.PatientId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-           
             // علاقة one to one بين المريض وطلب سيارة الإسعاف
             modelBuilder.Entity<Requests>()
                 .HasOne(r => r.Patient)
@@ -64,88 +51,71 @@ namespace l_hospital_mang.Data
                 .HasForeignKey<Requests>(r => r.PatientId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            //     // علاقة بين التحاليل والحجوزات one to one
+            // علاقة one to one بين الحجوزات والتحاليل
             modelBuilder.Entity<Consulting_reservation>()
-               .HasOne(r => r.Analysis)
-               .WithOne(a => a.Consulting_reservation)
-               .HasForeignKey<Analysis>(a => a.Consulting_reservationId)
-               .OnDelete(DeleteBehavior.Cascade);
-            //     // one to one  بين المواعيد والحجوزات
+                .HasOne(r => r.Analysis)
+                .WithOne(a => a.Consulting_reservation)
+                .HasForeignKey<Analysis>(a => a.Consulting_reservationId)
+                .OnDelete(DeleteBehavior.Cascade);
 
+            // علاقة one to one بين الحجوزات والمواعيد
             modelBuilder.Entity<Consulting_reservation>()
-            .HasOne(r => r.Dates)
-            .WithOne(d => d.Consulting_reservation)
-            .HasForeignKey<Dates>(d => d.Consulting_reservationId)
-            .OnDelete(DeleteBehavior.Cascade);
+                .HasOne(r => r.Dates)
+                .WithOne(d => d.Consulting_reservation)
+                .HasForeignKey<Dates>(d => d.Consulting_reservationId)
+                .OnDelete(DeleteBehavior.Cascade);
 
-
-
-            //     //one to one  بين الحجوزات والتصوير الشعاعي
-
+            // علاقة one to one بين الحجوزات والتصوير الشعاعي
             modelBuilder.Entity<Consulting_reservation>()
-            .HasOne(r => r.Radiography)
-            .WithOne(rg => rg.Consulting_reservation)
-            .HasForeignKey<Radiography>(rg => rg.Consulting_reservationId)
-            .OnDelete(DeleteBehavior.Cascade);
+                .HasOne(r => r.Radiography)
+                .WithOne(rg => rg.Consulting_reservation)
+                .HasForeignKey<Radiography>(rg => rg.Consulting_reservationId)
+                .OnDelete(DeleteBehavior.Cascade);
 
-            // one to one  بين الموظف والنوع
+            // علاقة one to one بين الموظف والنوع
             modelBuilder.Entity<Employees>()
-           .HasOne(e => e.Type)
-           .WithOne(t => t.Employee)
-           .HasForeignKey<Employees>(e => e.TypeId)
-           .OnDelete(DeleteBehavior.Restrict);
+                .HasOne(e => e.Type)
+                .WithOne(t => t.Employee)
+                .HasForeignKey<Employees>(e => e.TypeId)
+                .OnDelete(DeleteBehavior.Restrict);
 
-
-
-
-            //     //one to many  بين الطبيب و المواعيد 
-
+            // علاقة one to many بين الطبيب والمواعيد
             modelBuilder.Entity<Dates>()
-           .HasOne(d => d.Doctor)
-           .WithMany(d => d.Dates)
-           .HasForeignKey(d => d.DoctorId)
-           .OnDelete(DeleteBehavior.Cascade);
+                .HasOne(d => d.Doctor)
+                .WithMany(d => d.Dates)
+                .HasForeignKey(d => d.DoctorId)
+                .OnDelete(DeleteBehavior.Cascade);
 
-            //     // one to many  بين العيادات والاطباء
+            // علاقة one to many بين العيادات والأطباء
             modelBuilder.Entity<Doctors>()
-           .HasOne(d => d.Clinic)
-           .WithMany(c => c.Doctors)
-           .HasForeignKey(d => d.ClinicId)
-           .OnDelete(DeleteBehavior.Cascade);
+                .HasOne(d => d.Clinic)
+                .WithMany(c => c.Doctors)
+                .HasForeignKey(d => d.ClinicId)
+                .OnDelete(DeleteBehavior.Cascade);
 
-
-
-            // one to many  بين العيادات والاعلانات 
+            // علاقة one to one بين العيادات والإعلانات
             modelBuilder.Entity<Advertisments>()
-           .HasOne(a => a.Clinic)
-           .WithOne(c => c.Advertisments)
-           .HasForeignKey<Advertisments>(a => a.ClinicId)
-           .OnDelete(DeleteBehavior.Cascade);
+                .HasOne(a => a.Clinic)
+                .WithOne(c => c.Advertisments)
+                .HasForeignKey<Advertisments>(a => a.ClinicId)
+                .OnDelete(DeleteBehavior.Cascade);
 
-
-            // one to many  بين الاقامات والفاتورة
+            // علاقة one to many بين الإقامات والفواتير
             modelBuilder.Entity<invoice>()
-           .HasOne(i => i.ResidentPatient)
-           .WithMany(r => r.Invoices)
-           .HasForeignKey(i => i.ResidentPatientId)
-           .OnDelete(DeleteBehavior.Cascade);
+                .HasOne(i => i.ResidentPatient)
+                .WithMany(r => r.Invoices)
+                .HasForeignKey(i => i.ResidentPatientId)
+                .OnDelete(DeleteBehavior.Cascade);
 
-
-            //     //one to one  بين سيارة الساعاف والطلب
+            // علاقة one to one بين سيارة الإسعاف والطلب
             modelBuilder.Entity<CAmbulance_Car>()
-                 .HasOne(a => a.Request)
-                 .WithOne(r => r.AmbulanceCar)
-                 .HasForeignKey<Requests>(r => r.AmbulanceCarId);
+                .HasOne(a => a.Request)
+                .WithOne(r => r.AmbulanceCar)
+                .HasForeignKey<Requests>(r => r.AmbulanceCarId);
 
-
-
-
-
-
-            // many to many  بين الطبيب والمناوبات
-
+            // علاقة many to many بين الطبيب والمناوبات
             modelBuilder.Entity<doctors_shifts>()
-       .HasKey(ds => new { ds.DoctorId, ds.ShiftId });
+                .HasKey(ds => new { ds.DoctorId, ds.ShiftId });
 
             modelBuilder.Entity<doctors_shifts>()
                 .HasOne(ds => ds.Doctor)
@@ -156,48 +126,38 @@ namespace l_hospital_mang.Data
                 .HasOne(ds => ds.Shift)
                 .WithMany(s => s.DoctorShifts)
                 .HasForeignKey(ds => ds.ShiftId);
-            //     //one to one  بين الموظف و النوع 
-            modelBuilder.Entity<Employees>()
-           .HasOne(e => e.Type)
-           .WithOne(t => t.Employee)
-           .HasForeignKey<Employees>(e => e.TypeId);
-            //one to one  بين الغرف والمقيمين
-          modelBuilder.Entity<Resident_patients>()
-    .HasOne(rp => rp.Room)
-    .WithOne(r => r.Resident_patient)
-    .HasForeignKey<Resident_patients>(rp => rp.RoomId)
-    .OnDelete(DeleteBehavior.Restrict);
 
-            //one to many  بين المريض والسجل الطبي
+            // علاقة one to one بين الغرف والمقيمين
+            modelBuilder.Entity<Resident_patients>()
+                .HasOne(rp => rp.Room)
+                .WithOne(r => r.Resident_patient)
+                .HasForeignKey<Resident_patients>(rp => rp.RoomId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // علاقة one to many بين المريض والسجل الطبي
             modelBuilder.Entity<patient>()
-       .HasMany(p => p.Medical_Healths)    
-       .WithOne(mh => mh.Patient)          
-       .HasForeignKey(mh => mh.PatientId) 
-       .OnDelete(DeleteBehavior.Cascade);
-            //one to many  بين  الحجز الجراحي والمريض
+                .HasMany(p => p.Medical_Healths)
+                .WithOne(mh => mh.Patient)
+                .HasForeignKey(mh => mh.PatientId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // علاقة one to many بين الحجز الجراحي والمريض
             modelBuilder.Entity<surgery_reservations>()
                 .HasOne(sr => sr.Patient)
                 .WithMany(p => p.SurgeryReservations)
                 .HasForeignKey(sr => sr.PatientId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            //one to many  بين الحجز الجراحي والطبيب
+            // علاقة one to many بين الحجز الجراحي والطبيب
             modelBuilder.Entity<surgery_reservations>()
                 .HasOne(sr => sr.Doctor)
                 .WithMany(d => d.SurgeryReservations)
                 .HasForeignKey(sr => sr.DoctorId)
-                .OnDelete(DeleteBehavior.Restrict); 
+                .OnDelete(DeleteBehavior.Restrict);
 
 
 
+            
         }
-
-
-
-
-
-
-
-
     }
 }

@@ -1,4 +1,6 @@
-﻿using System;
+﻿//using l_hospital_mang.Migrations;
+using Microsoft.AspNetCore.Identity;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -67,6 +69,9 @@ namespace l_hospital_mang.Data.Models
         public DateTime? CreatedAt { get; set; } = DateTime.UtcNow;
         [JsonIgnore]
         public virtual ICollection<surgery_reservations> SurgeryReservations { get; set; } = new List<surgery_reservations>();
+
+        public string? IdentityUserId { get; set; }
+
 
     }
 }

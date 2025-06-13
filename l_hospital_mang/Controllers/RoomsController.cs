@@ -1,5 +1,6 @@
 ﻿using l_hospital_mang.Data;
 using l_hospital_mang.DTOs;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -15,6 +16,7 @@ namespace l_hospital_mang.Controllers
         {
             _context = context;
         }
+        [Authorize(Roles = "Receptionist")]
         [HttpPost("add-room")]
         public async Task<IActionResult> AddRoom([FromForm] Rooms room)
         {
@@ -64,9 +66,9 @@ namespace l_hospital_mang.Controllers
                 });
             }
         }
-
+        [Authorize(Roles = "Receptionist")]
         [HttpPut("update-room/{id}")]
-        public async Task<IActionResult> UpdateRoom(int id, [FromForm] RoomUpdateDtocs updateDto)
+        public async Task<IActionResult> UpdateRoom(long id, [FromForm] RoomUpdateDtocs updateDto)
         {
             var existingRoom = await _context.Room.FindAsync(id);
             if (existingRoom == null)
@@ -110,9 +112,9 @@ namespace l_hospital_mang.Controllers
         }
 
 
-
+        [Authorize(Roles = "Receptionist")]
         [HttpDelete("delete-room/{id}")]
-        public async Task<IActionResult> DeleteRoom(int id)
+        public async Task<IActionResult> DeleteRoom(long id)
         {
             var room = await _context.Room.FindAsync(id);
             if (room == null)

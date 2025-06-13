@@ -5,8 +5,10 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
 using l_hospital_mang.DTOs;
-using l_hospital_mang.Migrations;
+//using l_hospital_mang.Migrations;
 using Analysis = l_hospital_mang.Data.Models.Analysis;
+using Consulting_reservation = l_hospital_mang.Data.Models.Consulting_reservation;
+using System.Text.RegularExpressions;
 
 namespace l_hospital_mang.Controllers
 {
@@ -22,7 +24,7 @@ namespace l_hospital_mang.Controllers
             _context = context;
             _env = env;
         }
-
+        [Authorize(Roles = "Doctor")]
         [HttpPost("add/{consultingReservationId}")]
         public async Task<IActionResult> AddAnalysis([FromRoute] int consultingReservationId, [FromForm] AnalysisDto dto)
         {
@@ -70,7 +72,7 @@ namespace l_hospital_mang.Controllers
                 });
             }
 
-            // حفظ الملف على السيرفر
+            
             if (string.IsNullOrEmpty(_env.WebRootPath))
             {
                 return StatusCode(500, new { Message = "WebRootPath is not configured." });
@@ -147,9 +149,9 @@ namespace l_hospital_mang.Controllers
             }
         }
 
-
+        [Authorize(Roles = "Doctor")]
         [HttpPut("update/{id}")]
-        public async Task<IActionResult> UpdateAnalysis(long id, [FromForm] AnalysisDto dto)
+        public async Task<IActionResult> UpdateAnalysis(long id, [FromForm] AnalysisUpdateDtocs dto)
         {
             var analysis = await _context.Analysiss.FindAsync(id);
             if (analysis == null)
@@ -157,14 +159,35 @@ namespace l_hospital_mang.Controllers
                 return NotFound(new { message = "Analysis not found." });
             }
 
+            bool IsValidName(string name)
+            {
+                
+                return Regex.IsMatch(name, @"^[a-zA-Z]+$");
+            }
+
             if (!string.IsNullOrEmpty(dto.First_Name))
+            {
+                if (!IsValidName(dto.First_Name))
+                    return BadRequest(new { message = "First_Name must contain only letters." });
+
                 analysis.First_Name = dto.First_Name;
+            }
 
             if (!string.IsNullOrEmpty(dto.Middel_name))
+            {
+                if (!IsValidName(dto.Middel_name))
+                    return BadRequest(new { message = "Middel_name must contain only letters." });
+
                 analysis.Middel_name = dto.Middel_name;
+            }
 
             if (!string.IsNullOrEmpty(dto.Last_Name))
+            {
+                if (!IsValidName(dto.Last_Name))
+                    return BadRequest(new { message = "Last_Name must contain only letters." });
+
                 analysis.Last_Name = dto.Last_Name;
+            }
 
             if (dto.Age.HasValue)
                 analysis.Age = dto.Age.Value;
@@ -225,6 +248,7 @@ namespace l_hospital_mang.Controllers
 
 
 
+        [Authorize(Roles = "Doctor")]
         [HttpDelete("delete/{id}")]
         public async Task<IActionResult> DeleteAnalysis(long id)
         {
@@ -303,6 +327,7 @@ namespace l_hospital_mang.Controllers
 
             return Ok(result);
         }
+
         [HttpGet("patients/{patientId}/latest-analyses/pdfs")]
         public async Task<IActionResult> GetLatestTwoAnalysisPdfs(long patientId)
         {
