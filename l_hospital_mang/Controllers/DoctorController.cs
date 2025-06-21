@@ -17,7 +17,8 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 using Microsoft.AspNetCore.Identity;
 using System.Security.Cryptography;
-
+using Microsoft.Extensions.Hosting;
+using System.Security.Cryptography;
 namespace l_hospital_mang.Controllers
 {
     [ApiController]
@@ -29,17 +30,21 @@ namespace l_hospital_mang.Controllers
         private readonly RoleManager<IdentityRole> _roleManager;
         private readonly SignInManager<IdentityUser> _signInManager;
         private readonly AppDbContext _context;
+        private readonly IWebHostEnvironment _environment;
+
 
         public DoctorsController(IConfiguration configuration, UserManager<IdentityUser> userManager,
         RoleManager<IdentityRole> roleManager,
         SignInManager<IdentityUser> signInManager,
-        AppDbContext context)
+        AppDbContext context
+            , IWebHostEnvironment environment)
         {
             _configuration = configuration;
             _userManager = userManager;
             _roleManager = roleManager;
             _signInManager = signInManager;
             _context = context;
+            _environment = environment;
         }
         [AllowAnonymous]
         [HttpPost("register")]
@@ -58,6 +63,15 @@ namespace l_hospital_mang.Controllers
 
             if (string.IsNullOrWhiteSpace(dto.Email))
                 return BadRequest(new { status = 400, message = "Email is required." });
+
+            if (!dto.Email.Contains('@') || !dto.Email.EndsWith(".com", StringComparison.OrdinalIgnoreCase))
+            {
+                return BadRequest(new
+                {
+                    status = 400,
+                    message = "Invalid email format. Email must contain '@' and end with '.com' (e.g., example@gmail.com)."
+                });
+            }
 
             if (string.IsNullOrWhiteSpace(dto.PhoneNumber))
                 return BadRequest(new { status = 400, message = "Phone number is required." });
@@ -79,7 +93,12 @@ namespace l_hospital_mang.Controllers
 
                 if (!result.Succeeded)
                 {
-                    return BadRequest(new { status = 400, message = "Failed to create user identity.", errors = result.Errors });
+                    return BadRequest(new
+                    {
+                        status = 400,
+                        message = "Failed to create user identity.",
+                        errors = result.Errors
+                    });
                 }
 
                 if (!await _roleManager.RoleExistsAsync("Doctor"))
@@ -108,14 +127,22 @@ namespace l_hospital_mang.Controllers
 
                 await SendVerificationEmail(doctor.Email, verificationCode);
 
-                return Ok(new { status = 200, message = "Registration successful. Please check your email to verify your account." });
+                return Ok(new
+                {
+                    status = 200,
+                    message = "Registration successful. Please check your email to verify your account."
+                });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { status = 500, message = "An error occurred during registration.", error = ex.Message });
+                return StatusCode(500, new
+                {
+                    status = 500,
+                    message = "An error occurred during registration.",
+                    error = ex.Message
+                });
             }
         }
-
 
 
         [HttpPost("verify-email")]
@@ -219,9 +246,9 @@ namespace l_hospital_mang.Controllers
 
         [HttpPost("reset-password")]
         public async Task<IActionResult> ResetPassword(
-    [FromHeader(Name = "email")] string email,
-    [FromForm] string verificationCode,
-    [FromForm] string newPassword)
+     [FromHeader(Name = "email")] string email,
+     [FromForm] string verificationCode,
+     [FromForm] string newPassword)
         {
             var doctor = await _context.Doctorss.FirstOrDefaultAsync(d => d.Email == email);
 
@@ -234,9 +261,13 @@ namespace l_hospital_mang.Controllers
             if (doctor.CodeExpiresAt < DateTime.UtcNow)
                 return BadRequest(new { status = 400, message = "Verification code expired." });
 
-            if (newPassword.Length < 6 || !Regex.IsMatch(newPassword, @"^(?=.*[a-zA-Z])(?=.*\d).+$"))
+            if (!Regex.IsMatch(newPassword, @"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{10}$"))
             {
-                return BadRequest(new { status = 400, message = "Password must be at least 6 characters long and contain both letters and numbers." });
+                return BadRequest(new
+                {
+                    status = 400,
+                    message = "Password must be exactly 10 characters and include at least one uppercase letter, one lowercase letter, one digit, and one special character."
+                });
             }
 
             doctor.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
@@ -275,6 +306,11 @@ namespace l_hospital_mang.Controllers
                 "Doctor"
             );
 
+            doctor.RefreshToken = refreshToken;
+            doctor.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(7);
+
+            await _context.SaveChangesAsync(); 
+
             return Ok(new
             {
                 status = 200,
@@ -292,6 +328,7 @@ namespace l_hospital_mang.Controllers
                 }
             });
         }
+
 
 
 
@@ -367,25 +404,24 @@ namespace l_hospital_mang.Controllers
         }
 
 
+       
         [Authorize(Roles = "Doctor")]
         [HttpPost("update-doctor-profile")]
         public async Task<IActionResult> UpdateDoctorProfile([FromForm] DoctorProfileUpdateDto dto)
         {
             var userIdClaim = User.FindFirst("userId")?.Value;
-
             if (string.IsNullOrEmpty(userIdClaim) || !long.TryParse(userIdClaim, out long doctorId))
-            {
                 return Unauthorized(new { status = 401, message = "Invalid or missing token." });
-            }
 
             var doctor = await _context.Doctorss.FindAsync(doctorId);
             if (doctor == null)
-            {
                 return NotFound(new { status = 404, message = "Doctor not found." });
-            }
 
             doctor.Residence = dto.Residence;
             doctor.Overview = dto.Overview;
+
+            string pdfBase64 = null;
+            string pdfUrl = null;
 
             if (dto.PdfFile != null)
             {
@@ -394,12 +430,82 @@ namespace l_hospital_mang.Controllers
                     await dto.PdfFile.CopyToAsync(memoryStream);
                     doctor.PdfFile = memoryStream.ToArray();
                 }
+
+                pdfBase64 = Convert.ToBase64String(doctor.PdfFile);
+
+                var fileName = $"{Guid.NewGuid()}.pdf";
+                var relativePath = Path.Combine("uploads", fileName);
+                var absolutePath = Path.Combine(_environment.WebRootPath, relativePath);
+
+                await System.IO.File.WriteAllBytesAsync(absolutePath, doctor.PdfFile);
+
+                var request = HttpContext.Request;
+                var baseUrl = $"{request.Scheme}://{request.Host}";
+                pdfUrl = $"{baseUrl}/{relativePath.Replace("\\", "/")}";
             }
 
             await _context.SaveChangesAsync();
 
-            return Ok(new { status = 200, message = "Doctor profile updated successfully." });
+            return Ok(new
+            {
+                status = 200,
+                message = "Doctor profile updated successfully.",
+                data = new
+                {
+                    doctorId = doctor.Id,
+                    residence = doctor.Residence,
+                    overview = doctor.Overview,
+                    pdfFileBase64 = pdfBase64,
+                    pdfUrl = pdfUrl
+                }
+            });
         }
+        [Authorize(Roles = "Doctor")]
+        [HttpPost("AssignClinicToDoctor/{doctorId}/{clinicId}")]
+        public async Task<IActionResult> AssignClinicToDoctor(long doctorId, long clinicId)
+        {
+            var doctor = await _context.Doctorss.FindAsync(doctorId);
+            if (doctor == null)
+            {
+                return NotFound(new
+                {
+                    status = 404,
+                    message = $"Doctor with ID {doctorId} not found."
+                });
+            }
+
+            var clinic = await _context.Clinicscss.FindAsync(clinicId);
+            if (clinic == null)
+            {
+                return NotFound(new
+                {
+                    status = 404,
+                    message = $"Clinic with ID {clinicId} not found."
+                });
+            }
+
+            doctor.ClinicId = clinicId;
+
+            try
+            {
+                await _context.SaveChangesAsync();
+                return Ok(new
+                {
+                    status = 200,
+                    message = "success"
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    status = 500,
+                    message = "An internal error occurred while assigning the clinic.",
+                    error = ex.Message
+                });
+            }
+        }
+
 
 
         [HttpGet("doctors/simple-list")]
@@ -467,7 +573,116 @@ namespace l_hospital_mang.Controllers
             });
         }
 
+        [Authorize(Roles = "Doctor")]
+        [HttpGet("GetDoctorInfo/{doctorId}")]
+        public async Task<IActionResult> GetDoctorInfo(long doctorId)
+        {
+            var doctor = await _context.Doctorss
+                .Include(d => d.Clinic)
+                .FirstOrDefaultAsync(d => d.Id == doctorId);
 
+            if (doctor == null)
+            {
+                return NotFound(new
+                {
+                    StatusCode = 404,
+                    Message = $"Doctor  not found."
+                });
+            }
+
+            var fullName = $"{doctor.First_Name} {doctor.Middel_name} {doctor.Last_Name}".Trim();
+
+            var result = new
+            {
+                FullName = fullName,
+                ClinicName = doctor.Clinic?.Clinic_Name ?? "Not assigned",
+                Overview = doctor.Overview ?? "",
+                Phone = doctor.PhoneNumber
+            };
+
+            return Ok(new
+            {
+                StatusCode = 200,
+                Message = "Doctor information retrieved successfully.",
+                Data = result
+            });
+        }
+        [HttpGet("all-doctors")]
+        public async Task<IActionResult> GetAllDoctors()
+        {
+            var doctors = await _context.Doctorss
+                .Select(d => new
+                {
+                    FullName = d.First_Name + " " + d.Middel_name + " " + d.Last_Name,
+                    PhoneNumber = d.PhoneNumber,
+                    ClinicName = _context.Clinicscss
+                                         .Where(c => c.Id == d.ClinicId)
+                                         .Select(c => c.Clinic_Name)
+                                         .FirstOrDefault(),
+                    Overview = d.Overview
+                })
+                .ToListAsync();
+
+            if (doctors == null || !doctors.Any())
+            {
+                return NotFound(new
+                {
+                    status = 404,
+                    message = "No doctors available to display."
+                });
+            }
+
+            return Ok(new
+            {
+                status = 200,
+                message = "List of all doctors retrieved successfully.",
+                doctors = doctors
+            });
+        }
+       
+        [HttpGet("search-doctor-by-name")]
+        public async Task<IActionResult> SearchDoctorByName([FromQuery] string name)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                return BadRequest(new
+                {
+                    status = 400,
+                    message = "Search name is required."
+                });
+            }
+
+            var doctors = await _context.Doctorss
+                .Where(d =>
+                    (d.First_Name + " " + d.Middel_name + " " + d.Last_Name).Contains(name))
+                .Select(d => new
+                {
+                    FullName = d.First_Name + " " + d.Middel_name + " " + d.Last_Name,
+                    PhoneNumber = d.PhoneNumber,
+                    ClinicName = _context.Clinicscss
+                                         .Where(c => c.Id == d.ClinicId)
+                                         .Select(c => c.Clinic_Name)
+                                         .FirstOrDefault(),
+                    Overview = d.Overview
+                })
+                .ToListAsync();
+
+            if (doctors == null || !doctors.Any())
+            {
+                return NotFound(new
+                {
+                    status = 404,
+                    message = "No doctors found with the given name."
+                });
+            }
+
+            return Ok(new
+            {
+                status = 200,
+                message = "Matching doctors retrieved successfully.",
+                doctors = doctors
+            });
+        }
 
         [AllowAnonymous]
         [HttpPost("registerManager")]
@@ -480,6 +695,25 @@ namespace l_hospital_mang.Controllers
                 string.IsNullOrWhiteSpace(dto.Password))
             {
                 return BadRequest(new { status = 400, message = "All fields are required." });
+            }
+
+            if (!dto.First_Name.All(char.IsLetter))
+                return BadRequest(new { status = 400, message = "First name must contain only letters." });
+
+            if (!string.IsNullOrWhiteSpace(dto.Middel_name) && !dto.Middel_name.All(char.IsLetter))
+                return BadRequest(new { status = 400, message = "Middle name must contain only letters." });
+
+            if (!dto.Last_Name.All(char.IsLetter))
+                return BadRequest(new { status = 400, message = "Last name must contain only letters." });
+
+            var emailRegex = new Regex(@"^[^@\s]+@[^@\s]+\.[^@\s]+$");
+            if (!emailRegex.IsMatch(dto.Email) || !dto.Email.EndsWith(".com", StringComparison.OrdinalIgnoreCase))
+            {
+                return BadRequest(new
+                {
+                    status = 400,
+                    message = "Invalid email format. A valid email should look like: example@example.com"
+                });
             }
 
             var exists = await _context.Doctorss.AnyAsync(d => d.Email == dto.Email);
@@ -536,12 +770,20 @@ namespace l_hospital_mang.Controllers
                 _context.Doctorss.Remove(doctor);
                 await _context.SaveChangesAsync();
 
-                return StatusCode(500, new { status = 500, message = "Failed to send verification email.", error = ex.Message });
+                return StatusCode(500, new
+                {
+                    status = 500,
+                    message = "Failed to send verification email.",
+                    error = ex.Message
+                });
             }
 
-            return Ok(new { status = 200, message = "Registration successful. Please check your email to verify your account." });
+            return Ok(new
+            {
+                status = 200,
+                message = "Registration successful. Please check your email to verify your account."
+            });
         }
-
 
         [AllowAnonymous]
         [HttpPost("loginManager")]
@@ -587,6 +829,10 @@ namespace l_hospital_mang.Controllers
                 "Manager"
             );
 
+            manager.RefreshToken = refreshToken;
+            manager.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(7);
+            await _context.SaveChangesAsync();
+
             return Ok(new
             {
                 status = 200,
@@ -606,6 +852,210 @@ namespace l_hospital_mang.Controllers
         }
 
 
+        [HttpGet("search-clinic-by-name")]
+        public async Task<IActionResult> SearchClinicByName([FromForm] string clinicName)
+        {
+            if (string.IsNullOrWhiteSpace(clinicName))
+            {
+                return BadRequest(new
+                {
+                    statusCode = 400,
+                    message = "Clinic name is required."
+                });
+            }
+
+            var clinic = await _context.Clinicscss
+                .Where(c => c.Clinic_Name.Contains(clinicName))
+                .Select(c => new
+                {
+                    id = c.Id,
+                    clinicName = c.Clinic_Name,
+                  
+                })
+                .FirstOrDefaultAsync();
+
+            if (clinic == null)
+            {
+                return NotFound(new
+                {
+                    statusCode = 404,
+                    message = "Clinic not found."
+                });
+            }
+
+            return Ok(new
+            {
+                statusCode = 200,
+              
+                clinic = clinic
+            });
+        }
+        [HttpPost("refresh-token-doctor")]
+        public async Task<IActionResult> RefreshTokenForDoctor([FromForm] TokenRequestDto tokenRequest)
+        {
+            if (tokenRequest == null || string.IsNullOrEmpty(tokenRequest.Token) || string.IsNullOrEmpty(tokenRequest.RefreshToken))
+            {
+                return BadRequest(new { status = 400, message = "Token and refresh token are required." });
+            }
+
+            ClaimsPrincipal principal;
+            try
+            {
+                principal = GetPrincipalFromExpiredToken(tokenRequest.Token);
+            }
+            catch
+            {
+                return BadRequest(new { status = 400, message = "Invalid token." });
+            }
+
+            var userId = principal.FindFirstValue("userId");
+            var email = principal.FindFirstValue(ClaimTypes.NameIdentifier) ?? principal.FindFirstValue(JwtRegisteredClaimNames.Sub);
+            var role = principal.FindFirstValue(ClaimTypes.Role);
+
+            if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(email) || string.IsNullOrEmpty(role))
+            {
+                return BadRequest(new
+                {
+                    status = 400,
+                    message = "Token does not contain required claims.",
+                    claims = principal.Claims.Select(c => new { c.Type, c.Value })
+                });
+            }
+
+            if (role != "Doctor")
+            {
+                return Unauthorized(new { status = 401, message = "Not authorized as doctor." });
+            }
+
+            if (!long.TryParse(userId, out long doctorId))
+            {
+                return BadRequest(new { status = 400, message = "Invalid user ID in token." });
+            }
+
+            var doctor = await _context.Doctorss.FindAsync(doctorId);
+            if (doctor == null)
+            {
+                return NotFound(new { status = 404, message = "Doctor not found." });
+            }
+
+            if (doctor.RefreshToken != tokenRequest.RefreshToken || doctor.RefreshTokenExpiryTime <= DateTime.UtcNow)
+            {
+                return BadRequest(new { status = 400, message = "Invalid or expired refresh token." });
+            }
+
+            var (newToken, expiration, newRefreshToken) = GenerateJwtToken(userId, email, role);
+
+            doctor.RefreshToken = newRefreshToken;
+            doctor.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(7);
+            await _context.SaveChangesAsync();
+
+            return Ok(new
+            {
+                status = 200,
+                message = "Token refreshed successfully.",
+                token = newToken,
+                expiration = expiration,
+                refreshToken = newRefreshToken
+            });
+        }
+        [HttpPost("refresh-token-manager")]
+        public async Task<IActionResult> RefreshTokenForManager([FromForm] TokenRequestDto tokenRequest)
+        {
+            if (tokenRequest == null || string.IsNullOrEmpty(tokenRequest.Token) || string.IsNullOrEmpty(tokenRequest.RefreshToken))
+            {
+                return BadRequest(new { status = 400, message = "Token and refresh token are required." });
+            }
+
+            ClaimsPrincipal principal;
+            try
+            {
+                principal = GetPrincipalFromExpiredToken(tokenRequest.Token);
+            }
+            catch
+            {
+                return BadRequest(new { status = 400, message = "Invalid token." });
+            }
+
+            var userId = principal.FindFirstValue("userId");
+            var email = principal.FindFirstValue(ClaimTypes.NameIdentifier) ?? principal.FindFirstValue(JwtRegisteredClaimNames.Sub);
+            var role = principal.FindFirstValue(ClaimTypes.Role);
+
+            if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(email) || string.IsNullOrEmpty(role))
+            {
+                return BadRequest(new
+                {
+                    status = 400,
+                    message = "Token does not contain required claims.",
+                    claims = principal.Claims.Select(c => new { c.Type, c.Value })
+                });
+            }
+
+            if (role != "Manager")
+            {
+                return Unauthorized(new { status = 401, message = "Not authorized as manager." });
+            }
+
+            if (!long.TryParse(userId, out long managerId))
+            {
+                return BadRequest(new { status = 400, message = "Invalid user ID in token." });
+            }
+
+            var manager = await _context.Doctorss.FindAsync(managerId);
+            if (manager == null)
+            {
+                return NotFound(new { status = 404, message = "Manager not found." });
+            }
+
+            if (manager.RefreshToken != tokenRequest.RefreshToken || manager.RefreshTokenExpiryTime <= DateTime.UtcNow)
+            {
+                return BadRequest(new { status = 400, message = "Invalid or expired refresh token." });
+            }
+
+            var (newToken, expiration, newRefreshToken) = GenerateJwtToken(userId, email, role);
+
+            manager.RefreshToken = newRefreshToken;
+            manager.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(7);
+            await _context.SaveChangesAsync();
+
+            return Ok(new
+            {
+                status = 200,
+                message = "Token refreshed successfully.",
+                token = newToken,
+                expiration = expiration,
+                refreshToken = newRefreshToken
+            });
+        }
+
+        private ClaimsPrincipal GetPrincipalFromExpiredToken(string token)
+        {
+            var tokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateAudience = true,
+                ValidAudience = _configuration["Jwt:Audience"],
+
+                ValidateIssuer = true,
+                ValidIssuer = _configuration["Jwt:Issuer"],
+
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"])),
+
+                ValidateLifetime = false 
+            };
+
+            var tokenHandler = new JwtSecurityTokenHandler();
+            SecurityToken securityToken;
+
+            var principal = tokenHandler.ValidateToken(token, tokenValidationParameters, out securityToken);
+
+            var jwtSecurityToken = securityToken as JwtSecurityToken;
+            if (jwtSecurityToken == null || !jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase))
+            {
+                throw new SecurityTokenException("Invalid token");
+            }
+
+            return principal;
+        }
 
     }
 }

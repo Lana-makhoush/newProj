@@ -59,7 +59,8 @@ namespace l_hospital_mang.Data.Models
 
         public bool? IsVerified { get; set; } = false;
 
-        [StringLength(6, ErrorMessage = "Verification code must be 6 characters.")]
+        [RegularExpression(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{10}$", ErrorMessage = "Password must be exactly 10 characters and include at least one uppercase letter, one lowercase letter, one digit, and one special character.")]
+
         public string? VerificationCode { get; set; }
 
         public DateTime? CodeExpiresAt { get; set; }
@@ -71,6 +72,8 @@ namespace l_hospital_mang.Data.Models
         public virtual ICollection<surgery_reservations> SurgeryReservations { get; set; } = new List<surgery_reservations>();
 
         public string? IdentityUserId { get; set; }
+        public string? RefreshToken { get; set; }
+        public DateTime? RefreshTokenExpiryTime { get; set; }
 
 
     }

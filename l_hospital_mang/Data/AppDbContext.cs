@@ -22,7 +22,8 @@ namespace l_hospital_mang.Data
         public DbSet<Consulting_reservation> Consulting_reservations { get; set; }
         public DbSet<Doctors> Doctorss { get; set; }
         public DbSet<Shifts> Shiftss { get; set; }
-        public DbSet<Requests> Requestss { get; set; }
+        public DbSet<AmbulanceRequest> AmbulanceRequests { get; set; }
+
         public DbSet<CAmbulance_Car> CAmbulance_Car { get; set; }
         public DbSet<Employees> Employeess { get; set; }
         public DbSet<Analysis> Analysiss { get; set; }
@@ -44,14 +45,15 @@ namespace l_hospital_mang.Data
                 .HasForeignKey(r => r.PatientId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // علاقة one to one بين المريض وطلب سيارة الإسعاف
-            modelBuilder.Entity<Requests>()
-                .HasOne(r => r.Patient)
-                .WithOne(p => p.Requests)
-                .HasForeignKey<Requests>(r => r.PatientId)
-                .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<AmbulanceRequest>()
+         .HasOne(r => r.Car)
+         .WithMany(c => c.Requests)
+         .HasForeignKey(r => r.CarId)
+         .OnDelete(DeleteBehavior.SetNull); 
 
-            // علاقة one to one بين الحجوزات والتحاليل
+            modelBuilder.Entity<CAmbulance_Car>()
+                .HasIndex(c => c.CarNumber)
+                .IsUnique();
             modelBuilder.Entity<Consulting_reservation>()
                 .HasOne(r => r.Analysis)
                 .WithOne(a => a.Consulting_reservation)
@@ -60,10 +62,11 @@ namespace l_hospital_mang.Data
 
             // علاقة one to one بين الحجوزات والمواعيد
             modelBuilder.Entity<Consulting_reservation>()
-                .HasOne(r => r.Dates)
-                .WithOne(d => d.Consulting_reservation)
-                .HasForeignKey<Dates>(d => d.Consulting_reservationId)
-                .OnDelete(DeleteBehavior.Cascade);
+       .HasOne(cr => cr.Date)                 
+       .WithMany()                             
+       .HasForeignKey(cr => cr.DateId)         
+       .OnDelete(DeleteBehavior.Restrict);
+
 
             // علاقة one to one بين الحجوزات والتصوير الشعاعي
             modelBuilder.Entity<Consulting_reservation>()
@@ -107,11 +110,7 @@ namespace l_hospital_mang.Data
                 .HasForeignKey(i => i.ResidentPatientId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // علاقة one to one بين سيارة الإسعاف والطلب
-            modelBuilder.Entity<CAmbulance_Car>()
-                .HasOne(a => a.Request)
-                .WithOne(r => r.AmbulanceCar)
-                .HasForeignKey<Requests>(r => r.AmbulanceCarId);
+           
 
             // علاقة many to many بين الطبيب والمناوبات
             modelBuilder.Entity<doctors_shifts>()
@@ -155,9 +154,19 @@ namespace l_hospital_mang.Data
                 .HasForeignKey(sr => sr.DoctorId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            modelBuilder.Entity<AmbulanceRequest>()
+        .HasOne(ar => ar.AcceptedByEmployee)
+        .WithMany() // لا نربطها بقائمة طلبات مثلاً، لذا WithMany بدون navigation
+        .HasForeignKey(ar => ar.AcceptedByEmployeeId)
+        .OnDelete(DeleteBehavior.SetNull);
+            // one to many patient و AmbulanceRequest
+            modelBuilder.Entity<AmbulanceRequest>()
+                .HasOne(a => a.Patient)
+                .WithMany(p => p.AmbulanceRequests)
+                .HasForeignKey(a => a.PatientId)
+                .OnDelete(DeleteBehavior.Restrict);
 
 
-            
         }
     }
 }

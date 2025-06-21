@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using l_hospital_mang.Data;
 
@@ -11,9 +12,11 @@ using l_hospital_mang.Data;
 namespace l_hospital_mang.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250620214829_doctors_shifts")]
+    partial class doctors_shifts
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -350,7 +353,7 @@ namespace l_hospital_mang.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
 
-                    b.Property<long?>("ClinicId")
+                    b.Property<long>("ClinicId")
                         .HasColumnType("bigint");
 
                     b.Property<decimal>("DiscountDegree")
@@ -364,8 +367,7 @@ namespace l_hospital_mang.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("ClinicId")
-                        .IsUnique()
-                        .HasFilter("[ClinicId] IS NOT NULL");
+                        .IsUnique();
 
                     b.ToTable("Advertismentss");
                 });
@@ -585,12 +587,6 @@ namespace l_hospital_mang.Migrations
                     b.Property<string>("PhoneNumber")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("RefreshToken")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("RefreshTokenExpiryTime")
-                        .HasColumnType("datetime2");
 
                     b.Property<string>("Residence")
                         .IsRequired()
@@ -928,12 +924,6 @@ namespace l_hospital_mang.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("RefreshToken")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("RefreshTokenExpiryTime")
-                        .HasColumnType("datetime2");
-
                     b.Property<string>("Residence")
                         .HasColumnType("nvarchar(max)");
 
@@ -1075,7 +1065,8 @@ namespace l_hospital_mang.Migrations
                     b.HasOne("l_hospital_mang.Data.Models.Clinicscs", "Clinic")
                         .WithOne("Advertisments")
                         .HasForeignKey("l_hospital_mang.Data.Models.Advertisments", "ClinicId")
-                        .OnDelete(DeleteBehavior.Cascade);
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Clinic");
                 });

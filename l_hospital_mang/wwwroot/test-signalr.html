@@ -1,0 +1,37 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Driver Notification Test</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
+</head>
+<body>
+    <h2>Waiting for ambulance requests...</h2>
+    <div id="log"></div>
+
+    <script>
+        // إنشاء اتصال مع تمرير role=Driver كـ query parameter
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl("https://localhost:44379/AmbulanceHub?role=Driver")
+            .withAutomaticReconnect()
+            .build();
+
+        // استقبال إشعار طلب سيارة إسعاف جديد
+        connection.on("ReceiveAmbulanceRequest", (data) => {
+            const log = document.getElementById("log");
+            log.innerHTML += `<p><strong>Request:</strong> ID: ${data.requestId}, Location: (${data.latitude}, ${data.longitude}), Patient: ${data.patientName}</p>`;
+        });
+
+        // بدء الاتصال بالـ Hub
+        connection.start()
+            .then(() => {
+                console.log("Connected to AmbulanceHub as Driver.");
+            })
+            .catch(err => {
+                console.error("Connection error:", err);
+            });
+    </script>
+</body>
+</html>

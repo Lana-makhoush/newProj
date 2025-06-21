@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace l_hospital_mang.Data.Models
 {
@@ -15,7 +16,9 @@ namespace l_hospital_mang.Data.Models
         public patient Patient { get; set; }
         public Analysis Analysis { get; set; }
         public Radiography Radiography { get; set; }
-        public Dates Dates { get; set; }
-       //public Requests Request { get; set; }
+        [ForeignKey("Date")]
+        public long? DateId { get; set; }
+        public Dates? Date { get; set; }
+      
     }
 }

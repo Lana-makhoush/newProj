@@ -55,10 +55,25 @@ namespace l_hospital_mang.Controllers
                 });
             }
 
+            if (string.IsNullOrWhiteSpace(dto.Email) ||
+                !dto.Email.Contains("@") ||
+                !dto.Email.EndsWith(".com", StringComparison.OrdinalIgnoreCase))
+            {
+                return BadRequest(new
+                {
+                    status = 400,
+                    message = "Invalid email format. Email must contain '@' and end with '.com' (e.g., example@gmail.com)."
+                });
+            }
+
             var exists = await _context.Employeess.AnyAsync(d => d.Email == dto.Email);
             if (exists)
             {
-                return Conflict(new { status = 409, message = "Email already registered." });
+                return Conflict(new
+                {
+                    status = 409,
+                    message = "Email already registered."
+                });
             }
 
             var verificationCode = GenerateVerificationCode();
@@ -76,7 +91,7 @@ namespace l_hospital_mang.Controllers
                 VerificationCode = verificationCode,
                 CodeExpiresAt = DateTime.UtcNow.AddMinutes(15),
                 Age = dto.Age,
-                ID_Number = dto.ID_Number 
+                ID_Number = dto.ID_Number
             };
 
             _context.Employeess.Add(empolyee);
@@ -92,7 +107,13 @@ namespace l_hospital_mang.Controllers
                 {
                     _context.Employeess.Remove(empolyee);
                     await _context.SaveChangesAsync();
-                    return BadRequest(new { status = 400, message = "Failed to create user identity.", errors = result.Errors });
+
+                    return BadRequest(new
+                    {
+                        status = 400,
+                        message = "Failed to create user identity.",
+                        errors = result.Errors
+                    });
                 }
 
                 if (!await _roleManager.RoleExistsAsync("Receptionist"))
@@ -118,9 +139,12 @@ namespace l_hospital_mang.Controllers
                 });
             }
 
-            return Ok(new { status = 200, message = "Registration successful. Please check your email to verify your account." });
+            return Ok(new
+            {
+                status = 200,
+                message = "Registration successful. Please check your email to verify your account."
+            });
         }
-
 
 
         [HttpPost("verify-email-Employee")]
@@ -225,12 +249,21 @@ namespace l_hospital_mang.Controllers
 
 
         [HttpPost("reset-password-employee")]
-        public async Task<IActionResult> ResetPassword(
-   [FromHeader(Name = "email")] string email,
-   [FromForm] string VerificationCode,
-   [FromForm] string newPassword)
+        public async Task<IActionResult> ResetPasswordEmployee(
+     [FromHeader(Name = "Email")] string email,
+     [FromForm] string VerificationCode,
+     [FromForm] string NewPassword)
         {
-            var employee = await _context.Employeess.FirstOrDefaultAsync(d => d.Email == email);
+            if (!Regex.IsMatch(NewPassword, @"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{10}$"))
+            {
+                return BadRequest(new
+                {
+                    status = 400,
+                    message = "Password must be exactly 10 characters and include at least one uppercase letter, one lowercase letter, one digit, and one special character."
+                });
+            }
+
+            var employee = await _context.Employeess.FirstOrDefaultAsync(e => e.Email == email);
 
             if (employee == null)
                 return NotFound(new { status = 404, message = "Email not found." });
@@ -241,12 +274,7 @@ namespace l_hospital_mang.Controllers
             if (employee.CodeExpiresAt < DateTime.UtcNow)
                 return BadRequest(new { status = 400, message = "Verification code expired." });
 
-            if (newPassword.Length < 6 || !Regex.IsMatch(newPassword, @"^(?=.*[a-zA-Z])(?=.*\d).+$"))
-            {
-                return BadRequest(new { status = 400, message = "Password must be at least 6 characters long and contain both letters and numbers." });
-            }
-
-            employee.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
+            employee.PasswordHash = BCrypt.Net.BCrypt.HashPassword(NewPassword);
             employee.VerificationCode = null;
             employee.CodeExpiresAt = null;
 
@@ -254,6 +282,7 @@ namespace l_hospital_mang.Controllers
 
             return Ok(new { status = 200, message = "Password has been reset successfully." });
         }
+
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromForm] EmployeeLoginDto dto)
         {
@@ -272,16 +301,22 @@ namespace l_hospital_mang.Controllers
                 });
             }
 
-            var employee = await _context.Employeess.SingleOrDefaultAsync(d => d.Email == dto.Email);
-            if (employee == null)
+            var identityUser = await _userManager.FindByEmailAsync(dto.Email);
+            if (identityUser == null)
             {
                 return Unauthorized(new { status = 401, message = "Invalid email or password." });
             }
 
-            bool isPasswordValid = BCrypt.Net.BCrypt.Verify(dto.Password, employee.PasswordHash);
-            if (!isPasswordValid)
+            var passwordValid = await _userManager.CheckPasswordAsync(identityUser, dto.Password);
+            if (!passwordValid)
             {
                 return Unauthorized(new { status = 401, message = "Invalid email or password." });
+            }
+
+            var employee = await _context.Employeess.SingleOrDefaultAsync(e => e.Email == dto.Email);
+            if (employee == null)
+            {
+                return Unauthorized(new { status = 401, message = "Employee record not found." });
             }
 
             if (!employee.IsVerified)
@@ -324,6 +359,12 @@ namespace l_hospital_mang.Controllers
         private async Task<(string token, DateTime expiration, string refreshToken)> GenerateJwtToken(Employees employee)
         {
             var identityUser = await _userManager.FindByEmailAsync(employee.Email);
+
+            if (identityUser == null)
+            {
+                throw new ArgumentException("User not found for the given email.");
+            }
+
             var roles = await _userManager.GetRolesAsync(identityUser);
 
             var claims = new List<Claim>
@@ -362,25 +403,31 @@ namespace l_hospital_mang.Controllers
 
             return (new JwtSecurityTokenHandler().WriteToken(token), expiration, refreshToken);
         }
-        [HttpPost("refresh-token")]
-        public async Task<IActionResult> RefreshToken([FromBody] TokenRequestDto tokenRequest)
-        {
-            if (tokenRequest is null)
-                return BadRequest("Invalid request");
 
-            var principal = GetPrincipalFromExpiredToken(tokenRequest.Token);
+        [HttpPost("refresh-token")]
+        public async Task<IActionResult> RefreshToken([FromForm] string token, [FromForm] string refreshToken)
+        {
+            if (string.IsNullOrEmpty(token) || string.IsNullOrEmpty(refreshToken))
+                return BadRequest(new { message = "Token and refresh token are required." });
+
+            var principal = GetPrincipalFromExpiredToken(token);
             var email = principal?.Identity?.Name;
+
+            if (string.IsNullOrEmpty(email))
+                return Unauthorized(new { message = "Invalid token or user not found." });
 
             var employee = await _context.Employeess.FirstOrDefaultAsync(x => x.Email == email);
 
-            if (employee == null ||
-                employee.RefreshToken != tokenRequest.RefreshToken ||
-                employee.RefreshTokenExpiryTime <= DateTime.UtcNow)
-            {
-                return Unauthorized("Invalid refresh token");
-            }
+            if (employee == null)
+                return Unauthorized(new { message = "User not found." });
 
-            var newToken = await GenerateJwtToken(employee);
+            if (employee.RefreshToken != refreshToken)
+                return Unauthorized(new { message = "Refresh token does not match." });
+
+            if (employee.RefreshTokenExpiryTime <= DateTime.UtcNow)
+                return Unauthorized(new { message = "Refresh token has expired." });
+
+            var newTokenData = await GenerateJwtToken(employee);
             var newRefreshToken = GenerateRefreshToken();
 
             employee.RefreshToken = newRefreshToken;
@@ -389,11 +436,12 @@ namespace l_hospital_mang.Controllers
 
             return Ok(new
             {
-                token = newToken.token,
-                expiration = newToken.expiration,
+                token = newTokenData.token,
+                expiration = newTokenData.expiration,
                 refreshToken = newRefreshToken
             });
         }
+
         private ClaimsPrincipal GetPrincipalFromExpiredToken(string token)
         {
             var tokenValidationParameters = new TokenValidationParameters
@@ -485,6 +533,17 @@ namespace l_hospital_mang.Controllers
                 });
             }
 
+            // ✅ التحقق من صحة البريد باستخدام regex
+            var emailRegex = new Regex(@"^[^@\s]+@[^@\s]+\.[^@\s]+$");
+            if (string.IsNullOrWhiteSpace(dto.Email) || !emailRegex.IsMatch(dto.Email) || !dto.Email.EndsWith(".com", StringComparison.OrdinalIgnoreCase))
+            {
+                return BadRequest(new
+                {
+                    status = 400,
+                    message = "Invalid email format. Example of valid email: name@example.com"
+                });
+            }
+
             var exists = await _context.Employeess.AnyAsync(d => d.Email == dto.Email);
             if (exists)
             {
@@ -522,7 +581,12 @@ namespace l_hospital_mang.Controllers
                 {
                     _context.Employeess.Remove(empolyee);
                     await _context.SaveChangesAsync();
-                    return BadRequest(new { status = 400, message = "Failed to create user identity.", errors = result.Errors });
+                    return BadRequest(new
+                    {
+                        status = 400,
+                        message = "Failed to create user identity.",
+                        errors = result.Errors
+                    });
                 }
 
                 empolyee.IdentityUserId = user.Id;
@@ -551,7 +615,11 @@ namespace l_hospital_mang.Controllers
                 });
             }
 
-            return Ok(new { status = 200, message = "Registration successful. Please check your email to verify your account." });
+            return Ok(new
+            {
+                status = 200,
+                message = "Registration successful. Please check your email to verify your account."
+            });
         }
 
 
