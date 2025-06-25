@@ -183,6 +183,10 @@ namespace l_hospital_mang.Controllers
 
             var (token, expiration, refreshToken) = GenerateJwtToken(employee.Id.ToString(), employee.Email, "Driver");
 
+            employee.RefreshToken = refreshToken;
+            employee.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(7);
+            await _context.SaveChangesAsync(); 
+
             return Ok(new
             {
                 status = 200,
@@ -190,7 +194,14 @@ namespace l_hospital_mang.Controllers
                 token,
                 expiration,
                 refreshToken,
-                employee = new { employee.Id, employee.First_Name, employee.Last_Name, employee.Email, employee.PhoneNumber }
+                employee = new
+                {
+                    employee.Id,
+                    employee.First_Name,
+                    employee.Last_Name,
+                    employee.Email,
+                    employee.PhoneNumber
+                }
             });
         }
 
@@ -244,5 +255,85 @@ namespace l_hospital_mang.Controllers
 
             return (jwtToken, expiration, refreshToken);
         }
+      
+        [HttpPost("driver/refresh-token")]
+        public async Task<IActionResult> RefreshTokenForDriver([FromForm] string token, [FromForm] string refreshToken)
+        {
+            if (string.IsNullOrEmpty(token) || string.IsNullOrEmpty(refreshToken))
+                return BadRequest(new { message = "Token and refresh token are required." });
+
+            ClaimsPrincipal principal;
+            try
+            {
+                principal = GetPrincipalFromExpiredToken(token);
+            }
+            catch
+            {
+                return Unauthorized(new { message = "Invalid token." });
+            }
+
+            var email = principal?.FindFirst(ClaimTypes.NameIdentifier)?.Value ??
+                        principal?.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
+
+            if (string.IsNullOrEmpty(email))
+                return Unauthorized(new { message = "Invalid token or user not found." });
+
+            var employee = await _context.Employeess.FirstOrDefaultAsync(e => e.Email == email);
+            if (employee == null)
+                return Unauthorized(new { message = "Driver not found." });
+
+            if (employee.RefreshToken != refreshToken)
+                return Unauthorized(new { message = "Refresh token does not match." });
+
+            if (employee.RefreshTokenExpiryTime <= DateTime.UtcNow)
+                return Unauthorized(new { message = "Refresh token has expired." });
+
+            var (newToken, expiration, newRefreshToken) = GenerateJwtToken(employee.Id.ToString(), employee.Email, "Driver");
+
+            employee.RefreshToken = newRefreshToken;
+            employee.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(7);
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new
+            {
+                token = newToken,
+                expiration,
+                refreshToken = newRefreshToken
+            });
+        }
+
+        private ClaimsPrincipal GetPrincipalFromExpiredToken(string token)
+        {
+            var tokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateAudience = false, 
+                ValidateIssuer = false,  
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"])),
+                ValidateLifetime = false 
+            };
+
+            var tokenHandler = new JwtSecurityTokenHandler();
+            try
+            {
+                SecurityToken securityToken;
+                var principal = tokenHandler.ValidateToken(token, tokenValidationParameters, out securityToken);
+                var jwtToken = securityToken as JwtSecurityToken;
+
+                if (jwtToken == null || !jwtToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase))
+                    throw new SecurityTokenException("Invalid token");
+
+                return principal;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+
+
+
     }
 }

@@ -533,7 +533,6 @@ namespace l_hospital_mang.Controllers
                 });
             }
 
-            // ✅ التحقق من صحة البريد باستخدام regex
             var emailRegex = new Regex(@"^[^@\s]+@[^@\s]+\.[^@\s]+$");
             if (string.IsNullOrWhiteSpace(dto.Email) || !emailRegex.IsMatch(dto.Email) || !dto.Email.EndsWith(".com", StringComparison.OrdinalIgnoreCase))
             {
