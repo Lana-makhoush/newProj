@@ -56,7 +56,6 @@
             }
 
             int currentYear = DateTime.Now.Year;
-
             if (dto.Year < currentYear)
             {
                 return BadRequest(new
@@ -66,15 +65,7 @@
                 });
             }
 
-            if (string.IsNullOrWhiteSpace(dto.ReservationType))
-            {
-                return BadRequest(new
-                {
-                    status = 400,
-                    message = "ReservationType is required."
-                });
-            }
-
+            // ✅ التحقق من السعر فقط
             if (dto.Price <= 0)
             {
                 return BadRequest(new
@@ -84,14 +75,26 @@
                 });
             }
 
+            var userIdClaim = User.FindFirst("userId");
+            if (userIdClaim == null || !long.TryParse(userIdClaim.Value, out long doctorId))
+            {
+                return Unauthorized(new { status = 401, message = "Invalid or missing userId in token." });
+            }
+
+            var doctor = await _context.Doctorss.FindAsync(doctorId);
+            if (doctor == null)
+            {
+                return NotFound(new { status = 404, message = "Doctor not found." });
+            }
+
             var newDate = new Dates
             {
                 Day = dto.Day,
                 Month = dto.Month,
                 Year = dto.Year.Value,
                 TimeOfDay = dto.TimeOfDay,
-                ReservationType = dto.ReservationType,
-                Price = dto.Price
+                Price = dto.Price,
+                DoctorId = doctorId
             };
 
             _context.Datess.Add(newDate);
@@ -101,6 +104,7 @@
             {
                 status = 200,
                 message = "Date added successfully.",
+                doctorFullName = $"{doctor.First_Name} {doctor.Middel_name} {doctor.Last_Name}".Trim(),
                 data = new
                 {
                     id = newDate.Id,
@@ -113,63 +117,7 @@
                 }
             });
         }
-
-
         [Authorize(Roles = "Doctor,Manager")]
-        [HttpPost("assign-doctor-to-date/{doctorId}/{dateId}")]
-    public async Task<IActionResult> AssignDoctorToDate([FromRoute] long doctorId, [FromRoute] long dateId)
-    {
-        var doctor = await _context.Doctorss
-            .Include(d => d.Clinic) 
-            .FirstOrDefaultAsync(d => d.Id == doctorId);
-
-        if (doctor == null)
-        {
-            return NotFound(new
-            {
-                status = 404,
-                message = $"Doctor not found."
-            });
-        }
-
-        var date = await _context.Datess.FindAsync(dateId);
-        if (date == null)
-        {
-            return NotFound(new
-            {
-                status = 404,
-                message = $"Date not found."
-            });
-        }
-
-        date.DoctorId = doctorId;
-
-        _context.Datess.Update(date);
-        await _context.SaveChangesAsync();
-
-        string doctorFullName = $"{doctor.First_Name} {doctor.Middel_name} {doctor.Last_Name}";
-
-        string clinicName = doctor.Clinic?.Clinic_Name ?? "No Clinic";
-
-        return Ok(new
-        {
-            status = 200,
-            message = "Doctor assigned to the date successfully.",
-            data = new
-            {
-                dateId = date.Id,
-                doctorId = date.DoctorId,
-                doctorFullName = doctorFullName,
-                clinicName = clinicName,
-                day = date.Day,
-                month = date.Month,
-                year = date.Year,
-                timeOfDay = date.TimeOfDay
-            }
-        });
-    }
-        [Authorize(Roles = "Doctor,Manager")]
-
         [HttpPut("update-date/{dateId}")]
         public async Task<IActionResult> UpdateDate([FromRoute] long dateId, [FromForm] UpdateDateDto dto)
         {
@@ -206,6 +154,21 @@
             if (!string.IsNullOrWhiteSpace(dto.TimeOfDay))
                 date.TimeOfDay = dto.TimeOfDay;
 
+            // ✅ التحقق من السعر إن تم إرساله
+            if (dto.Price.HasValue)
+            {
+                if (dto.Price.Value <= 0)
+                {
+                    return BadRequest(new
+                    {
+                        status = 400,
+                        message = "Price must be greater than zero."
+                    });
+                }
+
+                date.Price = dto.Price.Value;
+            }
+
             _context.Datess.Update(date);
             await _context.SaveChangesAsync();
 
@@ -219,10 +182,13 @@
                     day = date.Day,
                     month = date.Month,
                     year = date.Year,
-                    timeOfDay = date.TimeOfDay
+                    timeOfDay = date.TimeOfDay,
+                    price = date.Price
                 }
             });
         }
+
+
         [Authorize(Roles = "Doctor,Manager")]
 
         [HttpGet("get-date/{dateId}")]
@@ -490,9 +456,65 @@
                 }
             });
         }
+        [Authorize(Roles = "Doctor,Admin,LabDoctor, RadiographyDoctor")]
+        [HttpGet("doctor/patients")]
+        public async Task<IActionResult> GetPatientsForDoctor()
+        {
+            var userIdClaim = User.FindFirst("userId");
+            if (userIdClaim == null)
+            {
+                return Unauthorized(new { status = 401, message = "Token does not contain userId claim." });
+            }
 
+            if (!long.TryParse(userIdClaim.Value, out long doctorId))
+            {
+                return BadRequest(new { status = 400, message = "Invalid userId in token." });
+            }
 
+            var doctorDateIds = await _context.Datess
+                .Where(d => d.DoctorId == doctorId)
+                .Select(d => d.Id)
+                .ToListAsync();
 
+            if (!doctorDateIds.Any())
+            {
+                return NotFound(new { status = 404, message = "No appointments found ." });
+            }
+
+            var reservations = await _context.Consulting_reservations
+                .Where(r => r.DateId.HasValue && doctorDateIds.Contains(r.DateId.Value))
+                .Include(r => r.Patient)
+                .Include(r => r.Date)
+                .Select(r => new
+                {
+                    ReservationId = r.Id,
+                    ReservationType = r.ReservationType,
+                    Price = r.Price,
+                    Date = new
+                    {
+                        r.Date.Day,
+                        r.Date.Month,
+                        r.Date.Year,
+                        r.Date.TimeOfDay
+                    },
+                    Patient = new
+                    {
+                        r.Patient.Id,
+                        FullName = $"{r.Patient.First_Name} {r.Patient.Last_Name}".Trim(),
+                        r.Patient.PhoneNumber,
+                        r.Patient.Residence,
+                        r.Patient.Age
+                    }
+                })
+                .ToListAsync();
+
+            return Ok(new
+            {
+                status = 200,
+                message = "Patients retrieved successfully.",
+                reservations = reservations
+            });
+        }
     }
 }
 

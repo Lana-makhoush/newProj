@@ -658,12 +658,12 @@ namespace l_hospital_mang.Controllers
                 message = "Token refreshed successfully.",
                 token = newToken,
                 expiration = expiration,
-                refreshToken = newRefreshToken
+                refreshToken = newRefreshToken,
+                role = role
             });
         }
 
 
-        // تابع استخراج الـ claims من توكن منتهي (غير صالح بعد)
         private ClaimsPrincipal GetPrincipalFromExpiredToken(string token)
         {
             var tokenValidationParameters = new TokenValidationParameters
@@ -674,7 +674,7 @@ namespace l_hospital_mang.Controllers
                 ValidAudience = _configuration["Jwt:Audience"],
                 ValidateIssuerSigningKey = true,
                 IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"])),
-                ValidateLifetime = false // لا نتحقق من صلاحية التوكن هنا للسماح باستخراج الـ claims حتى لو انتهت صلاحيته
+                ValidateLifetime = false 
             };
 
             var tokenHandler = new JwtSecurityTokenHandler();

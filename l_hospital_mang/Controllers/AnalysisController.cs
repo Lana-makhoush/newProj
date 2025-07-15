@@ -24,7 +24,8 @@ namespace l_hospital_mang.Controllers
             _context = context;
             _env = env;
         }
-        [Authorize(Roles = "Doctor")]
+        [Authorize(Roles = "LabDoctor")]
+
         [HttpPost("add/{consultingReservationId}")]
         public async Task<IActionResult> AddAnalysis([FromRoute] int consultingReservationId, [FromForm] AnalysisDto dto)
         {
@@ -149,7 +150,7 @@ namespace l_hospital_mang.Controllers
             }
         }
 
-        [Authorize(Roles = "Doctor")]
+        [Authorize(Roles = "LabDoctor")]
         [HttpPut("update/{id}")]
         public async Task<IActionResult> UpdateAnalysis(long id, [FromForm] AnalysisUpdateDtocs dto)
         {
@@ -248,7 +249,7 @@ namespace l_hospital_mang.Controllers
 
 
 
-        [Authorize(Roles = "Doctor")]
+        [Authorize(Roles = "LabDoctor")]
         [HttpDelete("delete/{id}")]
         public async Task<IActionResult> DeleteAnalysis(long id)
         {

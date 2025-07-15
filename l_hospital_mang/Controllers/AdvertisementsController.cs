@@ -32,7 +32,7 @@ namespace l_hospital_mang.Controllers
             _signInManager = signInManager;
             _context = context;
         }
-        [Authorize(Roles = "Doctor,Manager")]
+        [Authorize(Roles = "Doctor,Manager,LabDoctor,RadiographyDoctor")]
         [HttpPost("create-advertisement/{clinicId}")]
         public async Task<IActionResult> CreateAdvertisement(long clinicId, [FromForm] AdvertisementServiceDto dto)
         {
@@ -82,7 +82,7 @@ namespace l_hospital_mang.Controllers
                 }
             });
         }
-        [Authorize(Roles = "Doctor,Manager")]
+        [Authorize(Roles = "Doctor,Manager,LabDoctor,RadiographyDoctor")]
         [HttpPut("update-advertisement/{advertisementId}")]
         public async Task<IActionResult> UpdateAdvertisement(long advertisementId, [FromForm] AdvertisementUpdateDto dto)
         {
@@ -117,7 +117,8 @@ namespace l_hospital_mang.Controllers
                 }
             });
         }
-        [Authorize(Roles = "Doctor,Manager")]
+        [Authorize(Roles = "Doctor,Manager,LabDoctor,RadiographyDoctor")]
+
         [HttpDelete("delete-advertisement/{id}")]
         public async Task<IActionResult> DeleteAdvertisement(long id)
         {
@@ -130,7 +131,8 @@ namespace l_hospital_mang.Controllers
 
             return Ok(new { message = "Advertisement deleted successfully." });
         }
-        [Authorize(Roles = "Doctor,Manager")]
+        [Authorize(Roles = "Doctor,Manager,LabDoctor,RadiographyDoctor")]
+
         [HttpGet("advertisement/{id}")]
         public async Task<IActionResult> GetAdvertisement(long id)
         {
@@ -153,7 +155,8 @@ namespace l_hospital_mang.Controllers
                 }
             });
         }
-        [Authorize(Roles = "Doctor,Manager")]
+        [Authorize(Roles = "Doctor,Manager,LabDoctor,RadiographyDoctor")]
+
         [HttpGet("all-advertisements")]
         public async Task<IActionResult> GetAllAdvertisements()
         {

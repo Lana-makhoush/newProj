@@ -12,8 +12,8 @@ using l_hospital_mang.Data;
 namespace l_hospital_mang.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250621114728_Doctors")]
-    partial class Doctors
+    [Migration("20250713232103_Shifts")]
+    partial class Shifts
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

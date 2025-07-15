@@ -28,7 +28,7 @@ namespace l_hospital_mang.Data.Models
         [ForeignKey("Doctor")]
         public long? DoctorId { get; set; }
         public Doctors? Doctor { get; set; }
-        public string ReservationType { get; set; }
+        public string? ReservationType { get; set; }
         [Required(ErrorMessage = "Price is required")]
         public decimal Price { get; set; }
        

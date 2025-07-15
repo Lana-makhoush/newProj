@@ -329,9 +329,6 @@ namespace l_hospital_mang.Controllers
             });
         }
 
-
-
-
         private (string token, DateTime expiration, string refreshToken) GenerateJwtToken(string userId, string email, string role)
         {
             var claims = new[]
@@ -404,8 +401,8 @@ namespace l_hospital_mang.Controllers
         }
 
 
-       
-        [Authorize(Roles = "Doctor")]
+
+        [Authorize(Roles = "Doctor,Manager,LabDoctor,RadiographyDoctor")]
         [HttpPost("update-doctor-profile")]
         public async Task<IActionResult> UpdateDoctorProfile([FromForm] DoctorProfileUpdateDto dto)
         {
@@ -460,7 +457,8 @@ namespace l_hospital_mang.Controllers
                 }
             });
         }
-        [Authorize(Roles = "Doctor")]
+        [Authorize(Roles = "Doctor,Manager,LabDoctor,RadiographyDoctor")]
+
         [HttpPost("AssignClinicToDoctor/{doctorId}/{clinicId}")]
         public async Task<IActionResult> AssignClinicToDoctor(long doctorId, long clinicId)
         {
@@ -955,7 +953,8 @@ namespace l_hospital_mang.Controllers
                 message = "Token refreshed successfully.",
                 token = newToken,
                 expiration = expiration,
-                refreshToken = newRefreshToken
+                refreshToken = newRefreshToken,
+                role = role
             });
         }
         [HttpPost("refresh-token-manager")]
@@ -1023,7 +1022,8 @@ namespace l_hospital_mang.Controllers
                 message = "Token refreshed successfully.",
                 token = newToken,
                 expiration = expiration,
-                refreshToken = newRefreshToken
+                refreshToken = newRefreshToken,
+                role = role
             });
         }
 
@@ -1056,6 +1056,413 @@ namespace l_hospital_mang.Controllers
 
             return principal;
         }
+        [HttpPost("registerLabDoctor")]
+        public async Task<IActionResult> RegisterLabDoctor([FromForm] DoctorRegisterDto dto)
+        {
+            if (string.IsNullOrWhiteSpace(dto.First_Name) ||
+                string.IsNullOrWhiteSpace(dto.Last_Name) ||
+                string.IsNullOrWhiteSpace(dto.Email) ||
+                string.IsNullOrWhiteSpace(dto.PhoneNumber) ||
+                string.IsNullOrWhiteSpace(dto.Password))
+            {
+                return BadRequest(new { status = 400, message = "All fields are required." });
+            }
+
+            if (!dto.First_Name.All(char.IsLetter))
+                return BadRequest(new { status = 400, message = "First name must contain only letters." });
+
+            if (!string.IsNullOrWhiteSpace(dto.Middel_name) && !dto.Middel_name.All(char.IsLetter))
+                return BadRequest(new { status = 400, message = "Middle name must contain only letters." });
+
+            if (!dto.Last_Name.All(char.IsLetter))
+                return BadRequest(new { status = 400, message = "Last name must contain only letters." });
+
+            var emailRegex = new Regex(@"^[^@\s]+@[^@\s]+\.[^@\s]+$");
+            if (!emailRegex.IsMatch(dto.Email) || !dto.Email.EndsWith(".com", StringComparison.OrdinalIgnoreCase))
+            {
+                return BadRequest(new { status = 400, message = "Invalid email format." });
+            }
+
+            var exists = await _context.Doctorss.AnyAsync(d => d.Email == dto.Email);
+            if (exists)
+            {
+                return Conflict(new { status = 409, message = "Email already registered." });
+            }
+
+            var verificationCode = GenerateVerificationCode();
+            var passwordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password);
+
+            var labDoctor = new Doctors
+            {
+                First_Name = dto.First_Name,
+                Middel_name = dto.Middel_name,
+                Last_Name = dto.Last_Name,
+                PhoneNumber = dto.PhoneNumber,
+                Email = dto.Email,
+                PasswordHash = passwordHash,
+                IsVerified = false,
+                VerificationCode = verificationCode,
+                CodeExpiresAt = DateTime.UtcNow.AddMinutes(15)
+            };
+
+            _context.Doctorss.Add(labDoctor);
+            await _context.SaveChangesAsync();
+
+            try
+            {
+                var user = new IdentityUser { UserName = dto.Email, Email = dto.Email };
+                var result = await _userManager.CreateAsync(user, dto.Password);
+
+                if (!result.Succeeded)
+                {
+                    _context.Doctorss.Remove(labDoctor);
+                    await _context.SaveChangesAsync();
+                    return BadRequest(new { status = 400, message = "Failed to create identity.", errors = result.Errors });
+                }
+
+                labDoctor.IdentityUserId = user.Id;
+                _context.Doctorss.Update(labDoctor);
+                await _context.SaveChangesAsync();
+
+                if (!await _roleManager.RoleExistsAsync("LabDoctor"))
+                {
+                    await _roleManager.CreateAsync(new IdentityRole("LabDoctor"));
+                }
+
+                await _userManager.AddToRoleAsync(user, "LabDoctor");
+                await SendVerificationEmail(dto.Email, verificationCode);
+            }
+            catch (Exception ex)
+            {
+                _context.Doctorss.Remove(labDoctor);
+                await _context.SaveChangesAsync();
+
+                return StatusCode(500, new
+                {
+                    status = 500,
+                    message = "Failed to send verification email.",
+                    error = ex.Message
+                });
+            }
+
+            return Ok(new
+            {
+                status = 200,
+                message = "Lab doctor registered successfully. Please check your email to verify your account."
+            });
+        }
+        [HttpPost("login/lab-doctor")]
+        public async Task<IActionResult> LoginLabDoctor([FromForm] LabDoctorLoginDto dto)
+        {
+            if (string.IsNullOrWhiteSpace(dto.Email) || string.IsNullOrWhiteSpace(dto.Password))
+            {
+                return BadRequest(new { status = 400, message = "Email and password are required." });
+            }
+
+            var user = await _userManager.FindByEmailAsync(dto.Email);
+            if (user == null || !await _userManager.CheckPasswordAsync(user, dto.Password))
+            {
+                return Unauthorized(new { status = 401, message = "Invalid credentials." });
+            }
+
+            var roles = await _userManager.GetRolesAsync(user);
+            if (!roles.Contains("LabDoctor"))
+            {
+                return Forbid();
+            }
+
+            var labDoctor = await _context.Doctorss.FirstOrDefaultAsync(d => d.Email == dto.Email);
+            if (labDoctor == null || !(labDoctor.IsVerified ?? false))
+            {
+                return Unauthorized(new { status = 401, message = "Lab doctor not verified or not found." });
+            }
+
+           
+            var (token, expiration, refreshToken) = GenerateJwtToken(labDoctor.Id.ToString(), user.Email, "LabDoctor");
+
+           
+            labDoctor.RefreshToken = refreshToken;
+            labDoctor.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(7);
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new
+            {
+                status = 200,
+                message = "Login successful.",
+                token,
+                expiresAt = expiration,
+                refreshToken,
+                role = "LabDoctor",
+                doctorId = labDoctor.Id,
+                name = $"{labDoctor.First_Name} {labDoctor.Last_Name}"
+            });
+        }
+
+        [HttpPost("registerRadiographyDoctor")]
+        public async Task<IActionResult> RegisterRadiographyDoctor([FromForm] DoctorRegisterDto dto)
+        {
+            if (string.IsNullOrWhiteSpace(dto.First_Name) ||
+                string.IsNullOrWhiteSpace(dto.Last_Name) ||
+                string.IsNullOrWhiteSpace(dto.Email) ||
+                string.IsNullOrWhiteSpace(dto.PhoneNumber) ||
+                string.IsNullOrWhiteSpace(dto.Password))
+            {
+                return BadRequest(new { status = 400, message = "All fields are required." });
+            }
+
+            if (!dto.First_Name.All(char.IsLetter) ||
+                (!string.IsNullOrWhiteSpace(dto.Middel_name) && !dto.Middel_name.All(char.IsLetter)) ||
+                !dto.Last_Name.All(char.IsLetter))
+            {
+                return BadRequest(new { status = 400, message = "Name fields must contain only letters." });
+            }
+
+            var emailRegex = new Regex(@"^[^@\s]+@[^@\s]+\.[^@\s]+$");
+            if (!emailRegex.IsMatch(dto.Email) || !dto.Email.EndsWith(".com", StringComparison.OrdinalIgnoreCase))
+            {
+                return BadRequest(new { status = 400, message = "Invalid email format." });
+            }
+
+            var exists = await _context.Doctorss.AnyAsync(d => d.Email == dto.Email);
+            if (exists)
+            {
+                return Conflict(new { status = 409, message = "Email already registered." });
+            }
+
+            var verificationCode = GenerateVerificationCode();
+            var passwordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password);
+
+            var doctor = new Doctors
+            {
+                First_Name = dto.First_Name,
+                Middel_name = dto.Middel_name,
+                Last_Name = dto.Last_Name,
+                PhoneNumber = dto.PhoneNumber,
+                Email = dto.Email,
+                PasswordHash = passwordHash,
+                IsVerified = false,
+                VerificationCode = verificationCode,
+                CodeExpiresAt = DateTime.UtcNow.AddMinutes(15)
+            };
+
+            _context.Doctorss.Add(doctor);
+            await _context.SaveChangesAsync();
+
+            try
+            {
+                var user = new IdentityUser { UserName = dto.Email, Email = dto.Email };
+                var result = await _userManager.CreateAsync(user, dto.Password);
+
+                if (!result.Succeeded)
+                {
+                    _context.Doctorss.Remove(doctor);
+                    await _context.SaveChangesAsync();
+                    return BadRequest(new { status = 400, message = "Failed to create user identity.", errors = result.Errors });
+                }
+
+                doctor.IdentityUserId = user.Id;
+                _context.Doctorss.Update(doctor);
+                await _context.SaveChangesAsync();
+
+                if (!await _roleManager.RoleExistsAsync("RadiographyDoctor"))
+                {
+                    await _roleManager.CreateAsync(new IdentityRole("RadiographyDoctor"));
+                }
+
+                await _userManager.AddToRoleAsync(user, "RadiographyDoctor");
+                await SendVerificationEmail(doctor.Email, verificationCode);
+            }
+            catch (Exception ex)
+            {
+                _context.Doctorss.Remove(doctor);
+                await _context.SaveChangesAsync();
+
+                return StatusCode(500, new
+                {
+                    status = 500,
+                    message = "Failed to send verification email.",
+                    error = ex.Message
+                });
+            }
+
+            return Ok(new
+            {
+                status = 200,
+                message = "Radiography doctor registered successfully. Please check your email to verify your account."
+            });
+        }
+        [HttpPost("login/radiography-doctor")]
+        public async Task<IActionResult> LoginRadiographyDoctor([FromForm] RadiographyDoctLogindto dto)
+        {
+            if (string.IsNullOrWhiteSpace(dto.Email) || string.IsNullOrWhiteSpace(dto.Password))
+            {
+                return BadRequest(new { status = 400, message = "Email and password are required." });
+            }
+
+            var user = await _userManager.FindByEmailAsync(dto.Email);
+            if (user == null || !await _userManager.CheckPasswordAsync(user, dto.Password))
+            {
+                return Unauthorized(new { status = 401, message = "Invalid credentials." });
+            }
+
+            var roles = await _userManager.GetRolesAsync(user);
+            if (!roles.Contains("RadiographyDoctor"))
+            {
+                return Forbid();
+            }
+
+            var doctor = await _context.Doctorss.FirstOrDefaultAsync(d => d.Email == dto.Email);
+            if (doctor == null || !doctor.IsVerified.GetValueOrDefault())
+            {
+                return Unauthorized(new { status = 401, message = "Doctor not verified or not found." });
+            }
+
+            var (token, expiration, refreshToken) = GenerateJwtToken(doctor.Id.ToString(), user.Email, "RadiographyDoctor");
+
+          
+            doctor.RefreshToken = refreshToken;
+            doctor.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(7);
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new
+            {
+                status = 200,
+                message = "Login successful.",
+                token,
+                expiresAt = expiration,
+                refreshToken,
+                role = "RadiographyDoctor",
+                doctorId = doctor.Id,
+                name = $"{doctor.First_Name} {doctor.Last_Name}"
+            });
+        }
+
+
+        [HttpPost("refresh-token-Lab_Radiography_Doctor")]
+        public async Task<IActionResult> RefreshTokenForLabAndRadiographyDoctor([FromForm] TokenRequestDto tokenRequest)
+        {
+            if (tokenRequest == null || string.IsNullOrEmpty(tokenRequest.Token) || string.IsNullOrEmpty(tokenRequest.RefreshToken))
+            {
+                return BadRequest(new { status = 400, message = "Token and refresh token are required." });
+            }
+
+            ClaimsPrincipal principal;
+            try
+            {
+                principal = GetPrincipalFromExpiredToken(tokenRequest.Token);
+            }
+            catch
+            {
+                return BadRequest(new { status = 400, message = "Invalid token." });
+            }
+
+            var userId = principal.FindFirstValue("userId");
+            var email = principal.FindFirstValue(ClaimTypes.NameIdentifier) ?? principal.FindFirstValue(JwtRegisteredClaimNames.Sub);
+            var role = principal.FindFirstValue(ClaimTypes.Role);
+
+            if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(email) || string.IsNullOrEmpty(role))
+            {
+                return BadRequest(new
+                {
+                    status = 400,
+                    message = "Token does not contain required claims.",
+                    claims = principal.Claims.Select(c => new { c.Type, c.Value })
+                });
+            }
+
+            
+            if (role != "LabDoctor" && role != "RadiographyDoctor")
+            {
+                return Unauthorized(new { status = 401, message = "Not authorized as LabDoctor or RadiographyDoctor." });
+            }
+
+           
+            if (!long.TryParse(userId, out long doctorId))
+            {
+                return BadRequest(new { status = 400, message = "Invalid user ID in token." });
+            }
+
+            var doctor = await _context.Doctorss.FindAsync(doctorId);
+            if (doctor == null)
+            {
+                return NotFound(new { status = 404, message = "Doctor not found." });
+            }
+
+            if (doctor.RefreshToken != tokenRequest.RefreshToken || doctor.RefreshTokenExpiryTime <= DateTime.UtcNow)
+            {
+                return BadRequest(new { status = 400, message = "Invalid or expired refresh token." });
+            }
+
+            var (newToken, expiration, newRefreshToken) = GenerateJwtToken(userId, email, role);
+
+            doctor.RefreshToken = newRefreshToken;
+            doctor.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(7);
+            await _context.SaveChangesAsync();
+
+            return Ok(new
+            {
+                status = 200,
+                message = "Token refreshed successfully.",
+                token = newToken,
+                expiration = expiration,
+                refreshToken = newRefreshToken,
+                role = role
+            });
+        }
+        [Authorize(Roles = "Doctor,Manager,LabDoctor,RadiographyDoctor")]
+
+        [HttpPost("notify-patients-delay/{dateId}")]
+        public async Task<IActionResult> NotifyPatientsOfDelay([FromRoute] long dateId, [FromForm] int delayMinutes)
+        {
+            if (delayMinutes <= 0)
+            {
+                return BadRequest(new { status = 400, message = "Delay minutes must be greater than zero." });
+            }
+
+            var date = await _context.Datess.FindAsync(dateId);
+            if (date == null)
+            {
+                return NotFound(new { status = 404, message = "Date not found." });
+            }
+
+            var reservations = await _context.Consulting_reservations
+                .Where(r => r.DateId == dateId)
+                .Include(r => r.Patient)
+                .ToListAsync();
+
+            if (!reservations.Any())
+            {
+                return NotFound(new { status = 404, message = "No reservations found for this date." });
+            }
+
+            var doctor = await _context.Doctorss.FindAsync(date.DoctorId);
+            var doctorName = doctor != null
+                ? $"{doctor.First_Name} {doctor.Middel_name} {doctor.Last_Name}".Trim()
+                : "your doctor";
+
+            foreach (var reservation in reservations)
+            {
+                var patient = reservation.Patient;
+                var message = $"نأسف، سيتم تأخير موعدك مع الدكتور {doctorName} بمقدار {delayMinutes} دقيقة.";
+
+                Console.WriteLine($"🔔 إشعار للمريض {patient.First_Name} {patient.Last_Name}: {message}");
+
+               
+            }
+
+
+            return Ok(new
+            {
+                status = 200,
+                message = "Delay notifications sent successfully.",
+                totalPatients = reservations.Count
+            });
+        }
+
+
+
 
     }
 }

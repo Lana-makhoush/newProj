@@ -21,7 +21,7 @@ namespace l_hospital_mang.DTOs
         [RegularExpression(@"^(0?[1-9]|1[0-2]):[0-5][0-9]\s?(AM|PM)$", ErrorMessage = "Time must be in format hh:mm AM or PM")]
         public string TimeOfDay { get; set; } = string.Empty;
         [RegularExpression("^[a-zA-Z]+$", ErrorMessage = "First name must contain letters only.")]
-        public string ReservationType { get; set; }
+        public string? ReservationType { get; set; }
         [Required(ErrorMessage = "Price is required")]
         public decimal Price { get; set; }
     }

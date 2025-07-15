@@ -24,7 +24,7 @@ namespace l_hospital_mang.Controllers
             _context = context;
             _env = env;
         }
-        [Authorize(Roles = "Doctor")]
+        [Authorize(Roles = "RadiographyDoctor")]
 
         [HttpPost("add/{consultingReservationId}")]
         public async Task<IActionResult> AddRadiography([FromRoute] long consultingReservationId, [FromForm] RadiographyDto dto)
@@ -139,7 +139,8 @@ namespace l_hospital_mang.Controllers
         }
 
 
-        [Authorize(Roles = "Doctor")]
+        [Authorize(Roles = "RadiographyDoctor")]
+
 
         [HttpPut("update/{id}")]
         public async Task<IActionResult> UpdateRadiography([FromRoute] long id, [FromForm] RadiographyUpdateDto dto)
@@ -227,7 +228,8 @@ namespace l_hospital_mang.Controllers
                 });
             }
         }
-        [Authorize(Roles = "Doctor")]
+        [Authorize(Roles = "RadiographyDoctor")]
+
 
         [HttpDelete("delete/{id}")]
         public async Task<IActionResult> DeleteRadiography([FromRoute] long id)

@@ -508,7 +508,6 @@ namespace l_hospital_mang.Migrations
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("ReservationType")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("TimeOfDay")
