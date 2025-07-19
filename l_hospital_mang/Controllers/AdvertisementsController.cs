@@ -155,8 +155,7 @@ namespace l_hospital_mang.Controllers
                 }
             });
         }
-        [Authorize(Roles = "Doctor,Manager,LabDoctor,RadiographyDoctor")]
-
+      
         [HttpGet("all-advertisements")]
         public async Task<IActionResult> GetAllAdvertisements()
         {

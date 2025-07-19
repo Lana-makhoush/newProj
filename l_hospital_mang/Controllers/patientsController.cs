@@ -419,16 +419,16 @@ namespace l_hospital_mang.Controllers
                 return Unauthorized(new { status = 401, message = "Account is not verified. Please check your email." });
             }
 
-            // ⬇️ إنشاء التوكن و refresh token
+    
             var (token, expiration, refreshToken) = GenerateJwtToken(
                 patient.Id.ToString(),
                 patient.Email,
                 "Patient"
             );
 
-            // ⬇️ تخزين refresh token وتاريخ انتهاء صلاحيته
+           
             patient.RefreshToken = refreshToken;
-            patient.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(7); // أو المدة التي تراها مناسبة
+            patient.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(7);
             await _context.SaveChangesAsync();
 
             return Ok(new

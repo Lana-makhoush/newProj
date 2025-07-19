@@ -571,7 +571,7 @@ namespace l_hospital_mang.Controllers
             });
         }
 
-        [Authorize(Roles = "Doctor")]
+       
         [HttpGet("GetDoctorInfo/{doctorId}")]
         public async Task<IActionResult> GetDoctorInfo(long doctorId)
         {
@@ -584,7 +584,7 @@ namespace l_hospital_mang.Controllers
                 return NotFound(new
                 {
                     StatusCode = 404,
-                    Message = $"Doctor  not found."
+                    Message = $"Doctor not found."
                 });
             }
 
@@ -592,6 +592,7 @@ namespace l_hospital_mang.Controllers
 
             var result = new
             {
+                Id = doctor.Id,                     
                 FullName = fullName,
                 ClinicName = doctor.Clinic?.Clinic_Name ?? "Not assigned",
                 Overview = doctor.Overview ?? "",
@@ -605,6 +606,7 @@ namespace l_hospital_mang.Controllers
                 Data = result
             });
         }
+
         [HttpGet("all-doctors")]
         public async Task<IActionResult> GetAllDoctors()
         {
@@ -1461,6 +1463,39 @@ namespace l_hospital_mang.Controllers
             });
         }
 
+        [HttpGet("clinic-doctors/{clinicId}")]
+        public async Task<IActionResult> GetDoctorsByClinic(int clinicId)
+        {
+            var doctors = await _context.Doctorss
+                .Where(d => d.ClinicId == clinicId)
+                .Select(d => new
+                {
+                    FullName = d.First_Name + " " + d.Middel_name + " " + d.Last_Name,
+                    PhoneNumber = d.PhoneNumber,
+                    ClinicName = _context.Clinicscss
+                                         .Where(c => c.Id == d.ClinicId)
+                                         .Select(c => c.Clinic_Name)
+                                         .FirstOrDefault(),
+                    Overview = d.Overview
+                })
+                .ToListAsync();
+
+            if (doctors == null || !doctors.Any())
+            {
+                return NotFound(new
+                {
+                    status = 404,
+                    message = "No doctors available for the specified clinic."
+                });
+            }
+
+            return Ok(new
+            {
+                status = 200,
+                message = "Doctors for the specified clinic retrieved successfully.",
+                doctors = doctors
+            });
+        }
 
 
 

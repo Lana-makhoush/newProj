@@ -41,7 +41,8 @@
             _context = context;
             _environment = environment;
         }
-        [Authorize(Roles = "Doctor,Manager")]
+        [Authorize(Roles = "Doctor,Manager,LabDoctor,RadiographyDoctor")]
+
         [HttpPost("add-date")]
         public async Task<IActionResult> AddDate([FromForm] CreateDateDto dto)
         {
@@ -65,7 +66,7 @@
                 });
             }
 
-            // ✅ التحقق من السعر فقط
+           
             if (dto.Price <= 0)
             {
                 return BadRequest(new
@@ -117,7 +118,8 @@
                 }
             });
         }
-        [Authorize(Roles = "Doctor,Manager")]
+        [Authorize(Roles = "Doctor,Manager,LabDoctor,RadiographyDoctor")]
+
         [HttpPut("update-date/{dateId}")]
         public async Task<IActionResult> UpdateDate([FromRoute] long dateId, [FromForm] UpdateDateDto dto)
         {
@@ -154,7 +156,7 @@
             if (!string.IsNullOrWhiteSpace(dto.TimeOfDay))
                 date.TimeOfDay = dto.TimeOfDay;
 
-            // ✅ التحقق من السعر إن تم إرساله
+            
             if (dto.Price.HasValue)
             {
                 if (dto.Price.Value <= 0)
@@ -189,7 +191,8 @@
         }
 
 
-        [Authorize(Roles = "Doctor,Manager")]
+        [Authorize(Roles = "Doctor,Manager,LabDoctor,RadiographyDoctor")]
+
 
         [HttpGet("get-date/{dateId}")]
         public async Task<IActionResult> GetDateById([FromRoute] long dateId)
@@ -220,7 +223,8 @@
             });
         }
 
-        [Authorize(Roles = "Doctor,Manager")]
+        [Authorize(Roles = "Doctor,Manager,LabDoctor,RadiographyDoctor")]
+
 
         [HttpGet("all-dates")]
         public async Task<IActionResult> GetAllDates()
@@ -262,7 +266,8 @@
             });
         }
 
-        [Authorize(Roles = "Doctor,Manager")]
+        [Authorize(Roles = "Doctor,Manager,LabDoctor,RadiographyDoctor")]
+
 
         [HttpDelete("delete-date/{dateId}")]
         public async Task<IActionResult> DeleteDate([FromRoute] long dateId)
