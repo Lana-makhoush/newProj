@@ -549,10 +549,17 @@ namespace l_hospital_mang.Controllers
                 return NotFound(new { status = 404, message = "Patient not found." });
             }
 
-            patient.Age = dto.Age;
-            patient.Residence = dto.Residence;
-            patient.ID_Number = dto.ID_Number;
-            patient.PhoneNumber = dto.PhoneNumber;
+            if (dto.Age != null)
+                patient.Age = dto.Age;
+
+            if (!string.IsNullOrWhiteSpace(dto.Residence))
+                patient.Residence = dto.Residence;
+
+            if (!string.IsNullOrWhiteSpace(dto.ID_Number))
+                patient.ID_Number = dto.ID_Number;
+
+            if (!string.IsNullOrWhiteSpace(dto.PhoneNumber))
+                patient.PhoneNumber = dto.PhoneNumber;
 
             if (dto.Image != null)
             {
@@ -560,10 +567,12 @@ namespace l_hospital_mang.Controllers
                 Directory.CreateDirectory(uploadsFolder);
                 var fileName = $"{Guid.NewGuid()}_{dto.Image.FileName}";
                 var filePath = Path.Combine(uploadsFolder, fileName);
+
                 using (var stream = new FileStream(filePath, FileMode.Create))
                 {
                     await dto.Image.CopyToAsync(stream);
                 }
+
                 patient.ImagePath = $"/Images/Patients/{fileName}";
             }
 
@@ -592,6 +601,41 @@ namespace l_hospital_mang.Controllers
         }
 
 
+        [Authorize(Roles = "Patient")]
+        [HttpGet("get-patient-profile")]
+        public async Task<IActionResult> GetPatientProfile()
+        {
+            var patientIdClaim = User.FindFirst("userId")?.Value;
+            if (string.IsNullOrEmpty(patientIdClaim) || !long.TryParse(patientIdClaim, out long patientId))
+            {
+                return Unauthorized(new { status = 401, message = "Invalid or missing token." });
+            }
+
+            var patient = await _context.Patients.FindAsync(patientId);
+            if (patient == null)
+            {
+                return NotFound(new { status = 404, message = "Patient not found." });
+            }
+
+            return Ok(new
+            {
+                status = 200,
+                message = "Patient profile retrieved successfully.",
+                patient = new
+                {
+                    patient.Id,
+                    FullName = $"{patient.First_Name} {patient.Middel_name} {patient.Last_Name}",
+                    Age = patient.Age?.ToString("yyyy-MM-dd"),
+                    patient.Residence,
+                    patient.ID_Number,
+                    patient.PhoneNumber,
+                    patient.Email,
+                    patient.ImagePath,
+                    patient.IsVerified,
+                    CreatedAt = patient.CreatedAt?.ToString("yyyy-MM-dd HH:mm:ss")
+                }
+            });
+        }
 
         [HttpPost("refresh-token-patient")]
         public async Task<IActionResult> RefreshTokenForPatient([FromForm] TokenRequestDto tokenRequest)

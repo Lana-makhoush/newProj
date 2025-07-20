@@ -458,6 +458,61 @@ namespace l_hospital_mang.Controllers
             });
         }
         [Authorize(Roles = "Doctor,Manager,LabDoctor,RadiographyDoctor")]
+        [HttpGet("get-doctor-profile")]
+        public async Task<IActionResult> GetDoctorProfile()
+        {
+            var userIdClaim = User.FindFirst("userId")?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !long.TryParse(userIdClaim, out long doctorId))
+                return Unauthorized(new { status = 401, message = "Invalid or missing token." });
+
+            var doctor = await _context.Doctorss.FindAsync(doctorId);
+            if (doctor == null)
+                return NotFound(new { status = 404, message = "Doctor not found." });
+
+            string pdfBase64 = null;
+            string pdfUrl = null;
+
+            if (doctor.PdfFile != null && doctor.PdfFile.Length > 0)
+            {
+                pdfBase64 = Convert.ToBase64String(doctor.PdfFile);
+
+                var fileName = $"{doctorId}_profile.pdf";
+                var relativePath = Path.Combine("uploads", fileName);
+                var absolutePath = Path.Combine(_environment.WebRootPath, relativePath);
+
+                if (!System.IO.File.Exists(absolutePath))
+                {
+                    await System.IO.File.WriteAllBytesAsync(absolutePath, doctor.PdfFile);
+                }
+
+                var request = HttpContext.Request;
+                var baseUrl = $"{request.Scheme}://{request.Host}";
+                pdfUrl = $"{baseUrl}/{relativePath.Replace("\\", "/")}";
+            }
+
+            return Ok(new
+            {
+                status = 200,
+                message = "Doctor profile retrieved successfully.",
+                doctor = new
+                {
+                    doctor.Id,
+                    fullName = $"{doctor.First_Name} {doctor.Middel_name} {doctor.Last_Name}",
+                    
+                    doctor.Residence,
+                    doctor.PhoneNumber,
+                    doctor.Email,
+                    doctor.Overview,
+                    doctor.ClinicId,
+                  
+                    pdfFileBase64 = pdfBase64,
+                    pdfUrl = pdfUrl
+                }
+            });
+        }
+
+
+        [Authorize(Roles = "Doctor,Manager,LabDoctor,RadiographyDoctor")]
 
         [HttpPost("AssignClinicToDoctor/{doctorId}/{clinicId}")]
         public async Task<IActionResult> AssignClinicToDoctor(long doctorId, long clinicId)
@@ -612,7 +667,7 @@ namespace l_hospital_mang.Controllers
         {
             var doctors = await _context.Doctorss
                 .Select(d => new
-                {
+                {     id=d.Id,
                     FullName = d.First_Name + " " + d.Middel_name + " " + d.Last_Name,
                     PhoneNumber = d.PhoneNumber,
                     ClinicName = _context.Clinicscss
@@ -656,7 +711,7 @@ namespace l_hospital_mang.Controllers
                 .Where(d =>
                     (d.First_Name + " " + d.Middel_name + " " + d.Last_Name).Contains(name))
                 .Select(d => new
-                {
+                { id=d.Id,
                     FullName = d.First_Name + " " + d.Middel_name + " " + d.Last_Name,
                     PhoneNumber = d.PhoneNumber,
                     ClinicName = _context.Clinicscss
@@ -853,7 +908,7 @@ namespace l_hospital_mang.Controllers
 
 
         [HttpGet("search-clinic-by-name")]
-        public async Task<IActionResult> SearchClinicByName([FromForm] string clinicName)
+        public async Task<IActionResult> SearchClinicByName([FromQuery] string clinicName)
         {
             if (string.IsNullOrWhiteSpace(clinicName))
             {
