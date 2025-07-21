@@ -268,7 +268,6 @@
 
         [Authorize(Roles = "Doctor,Manager,LabDoctor,RadiographyDoctor")]
 
-
         [HttpDelete("delete-date/{dateId}")]
         public async Task<IActionResult> DeleteDate([FromRoute] long dateId)
         {
@@ -282,15 +281,28 @@
                 });
             }
 
+            bool isReserved = await _context.Consulting_reservations
+                .AnyAsync(r => r.DateId == dateId);
+
+            if (isReserved)
+            {
+                return BadRequest(new
+                {
+                    status = 400,
+                    message = "This date cannot be deleted because it has been reserved by patients."
+                });
+            }
+
             _context.Datess.Remove(date);
             await _context.SaveChangesAsync();
 
             return Ok(new
             {
                 status = 200,
-                message = $"Date  deleted successfully."
+                message = $"Date deleted successfully."
             });
         }
+
         [HttpGet("months-for-doctor/{doctorId}")]
         public async Task<IActionResult> GetDistinctMonthsForDoctor(long doctorId)
         {
