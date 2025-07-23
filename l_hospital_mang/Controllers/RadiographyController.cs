@@ -363,8 +363,100 @@ namespace l_hospital_mang.Controllers
                 data = radiographies
             });
         }
+        [Authorize(Roles = "Patient")]
+        [HttpGet("my-radiographies")]
+        public async Task<IActionResult> GetRadiographiesForPatient()
+        {
+            var patientIdClaim = User.FindFirst("userId")?.Value;
 
+            if (string.IsNullOrEmpty(patientIdClaim) || !long.TryParse(patientIdClaim, out long patientId))
+            {
+                return Unauthorized(new
+                {
+                    StatusCode = 401,
+                    Message = "Unauthorized: Patient ID not found in token."
+                });
+            }
+            var radiographies = await _context.Radiographyies
+                .Include(r => r.Consulting_reservation) 
+                .Where(r => r.Consulting_reservation.PatientId == patientId)
+                .ToListAsync();
 
+            if (radiographies == null || !radiographies.Any())
+            {
+                return NotFound(new
+                {
+                    StatusCode = 404,
+                    Message = "No radiography records found for this patient."
+                });
+            }
+
+            var result = radiographies.Select(r => new
+            {
+                r.Id,
+                r.First_Name,
+                r.Middel_name,
+                r.Last_Name,
+                Age = r.Age.HasValue ? r.Age.Value.ToString("yyyy-MM-dd") : null,
+                r.Consulting_reservationId,
+                r.Price,
+                ImageUrl = $"{Request.Scheme}://{Request.Host}/{r.ImagePath}"
+            });
+
+            return Ok(new
+            {
+                StatusCode = 200,
+                Message = "Radiography records for the patient retrieved successfully.",
+                Data = result
+            });
+        }
+
+        [HttpGet("radiography-doctors")]
+        public async Task<IActionResult> GetRadiographyDoctors()
+        {
+            var role = await _context.Roles.FirstOrDefaultAsync(r => r.Name == "RadiographyDoctor");
+
+            if (role == null)
+            {
+                return NotFound(new { Message = "Role 'RadiographyDoctor' not found." });
+            }
+
+            var userIdsInRole = await _context.UserRoles
+                .Where(ur => ur.RoleId == role.Id)
+                .Select(ur => ur.UserId)
+                .ToListAsync();
+
+            var doctors = await _context.Doctorss
+                .Where(d => userIdsInRole.Contains(d.IdentityUserId))
+                .Select(d => new
+                {
+                    d.Id,
+                    d.First_Name,
+                    d.Middel_name,
+                    d.Last_Name,
+                    d.Email,
+                    d.PhoneNumber,
+                    d.Residence,
+                    d.Overview
+                })
+                .ToListAsync();
+
+            if (doctors.Count == 0)
+            {
+                return Ok(new
+                {
+                    StatusCode = 200,
+                    Message = "No Radiography Doctors found."
+                });
+            }
+
+            return Ok(new
+            {
+                StatusCode = 200,
+                Count = doctors.Count,
+                Doctors = doctors
+            });
+        }
 
     }
 

@@ -12,7 +12,7 @@ using l_hospital_mang.Data;
 namespace l_hospital_mang.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250713231812_Doctors")]
+    [Migration("20250723170326_Doctors")]
     partial class Doctors
     {
         /// <inheritdoc />
@@ -511,7 +511,6 @@ namespace l_hospital_mang.Migrations
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("ReservationType")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("TimeOfDay")
@@ -556,6 +555,9 @@ namespace l_hospital_mang.Migrations
                         .HasColumnType("nvarchar(50)");
 
                     b.Property<string>("IdentityUserId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ImagePath")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<bool?>("IsVerified")

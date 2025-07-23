@@ -17,5 +17,7 @@ namespace l_hospital_mang.DTOs
         [StringLength(100, ErrorMessage = "The overview cannot exceed 100 characters.")]
         [RegularExpression(@"^[\p{L}\s]+$", ErrorMessage = "Overview must contain letters only.")]
         public string Overview { get; set; } = string.Empty;
+
+        public IFormFile? Image { get; set; }  // الصورة ليست إجبارية في التحديث
     }
 }

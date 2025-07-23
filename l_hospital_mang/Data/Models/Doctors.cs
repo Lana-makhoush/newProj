@@ -74,7 +74,9 @@ namespace l_hospital_mang.Data.Models
         public string? IdentityUserId { get; set; }
         public string? RefreshToken { get; set; }
         public DateTime? RefreshTokenExpiryTime { get; set; }
-
+        [NotMapped]
+        public IFormFile? Image { get; set; }
+        public string? ImagePath { get; set; }
 
     }
 }

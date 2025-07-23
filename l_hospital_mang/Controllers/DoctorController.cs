@@ -19,6 +19,8 @@ using Microsoft.AspNetCore.Identity;
 using System.Security.Cryptography;
 using Microsoft.Extensions.Hosting;
 using System.Security.Cryptography;
+using System.Security.Claims;
+
 namespace l_hospital_mang.Controllers
 {
     [ApiController]
@@ -402,61 +404,7 @@ namespace l_hospital_mang.Controllers
 
 
 
-        [Authorize(Roles = "Doctor,Manager,LabDoctor,RadiographyDoctor")]
-        [HttpPost("update-doctor-profile")]
-        public async Task<IActionResult> UpdateDoctorProfile([FromForm] DoctorProfileUpdateDto dto)
-        {
-            var userIdClaim = User.FindFirst("userId")?.Value;
-            if (string.IsNullOrEmpty(userIdClaim) || !long.TryParse(userIdClaim, out long doctorId))
-                return Unauthorized(new { status = 401, message = "Invalid or missing token." });
-
-            var doctor = await _context.Doctorss.FindAsync(doctorId);
-            if (doctor == null)
-                return NotFound(new { status = 404, message = "Doctor not found." });
-
-            doctor.Residence = dto.Residence;
-            doctor.Overview = dto.Overview;
-
-            string pdfBase64 = null;
-            string pdfUrl = null;
-
-            if (dto.PdfFile != null)
-            {
-                using (var memoryStream = new MemoryStream())
-                {
-                    await dto.PdfFile.CopyToAsync(memoryStream);
-                    doctor.PdfFile = memoryStream.ToArray();
-                }
-
-                pdfBase64 = Convert.ToBase64String(doctor.PdfFile);
-
-                var fileName = $"{Guid.NewGuid()}.pdf";
-                var relativePath = Path.Combine("uploads", fileName);
-                var absolutePath = Path.Combine(_environment.WebRootPath, relativePath);
-
-                await System.IO.File.WriteAllBytesAsync(absolutePath, doctor.PdfFile);
-
-                var request = HttpContext.Request;
-                var baseUrl = $"{request.Scheme}://{request.Host}";
-                pdfUrl = $"{baseUrl}/{relativePath.Replace("\\", "/")}";
-            }
-
-            await _context.SaveChangesAsync();
-
-            return Ok(new
-            {
-                status = 200,
-                message = "Doctor profile updated successfully.",
-                data = new
-                {
-                    doctorId = doctor.Id,
-                    residence = doctor.Residence,
-                    overview = doctor.Overview,
-                    pdfFileBase64 = pdfBase64,
-                    pdfUrl = pdfUrl
-                }
-            });
-        }
+        
         [Authorize(Roles = "Doctor,Manager,LabDoctor,RadiographyDoctor")]
         [HttpGet("get-doctor-profile")]
         public async Task<IActionResult> GetDoctorProfile()
@@ -1551,6 +1499,32 @@ namespace l_hospital_mang.Controllers
                 doctors = doctors
             });
         }
+        [Authorize]
+        [HttpGet("has-clinic")]
+        public async Task<IActionResult> HasClinic()
+        {
+            var userIdString = User.FindFirst("userId")?.Value;
+
+            if (!long.TryParse(userIdString, out long doctorId))
+            {
+                return Unauthorized(new { message = "Invalid userId in token." });
+            }
+
+            var doctor = await _context.Doctorss
+                .AsNoTracking()
+                .FirstOrDefaultAsync(d => d.Id == doctorId);
+
+            if (doctor == null)
+            {
+                return NotFound(new { message = "Doctor not found for the current user.", userIdInToken = doctorId });
+            }
+
+            bool hasClinic = doctor.ClinicId != null;
+
+            return Ok(new { hasClinic });
+        }
+
+
 
 
 

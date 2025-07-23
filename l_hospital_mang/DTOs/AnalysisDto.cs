@@ -7,12 +7,18 @@ namespace l_hospital_mang.Data.DTOs
     public class AnalysisDto
     {
         //[Required(ErrorMessage = "First name is required.")]
+        [RegularExpression("^[a-zA-Z]+$", ErrorMessage = "First name must contain letters only.")]
+
         public string? First_Name { get; set; }
 
         //[Required(ErrorMessage = "Middle name is required.")]
+        [RegularExpression("^[a-zA-Z]+$", ErrorMessage = "First name must contain letters only.")]
+
         public string? Middel_name { get; set; }
 
         //[Required(ErrorMessage = "Last name is required.")]
+        [RegularExpression("^[a-zA-Z]+$", ErrorMessage = "First name must contain letters only.")]
+
         public string? Last_Name { get; set; }
 
         //[Required(ErrorMessage = "Age is required.")]
