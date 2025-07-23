@@ -554,6 +554,9 @@ namespace l_hospital_mang.Migrations
                     b.Property<string>("IdentityUserId")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<byte[]>("ImageData")
+                        .HasColumnType("varbinary(max)");
+
                     b.Property<string>("ImagePath")
                         .HasColumnType("nvarchar(max)");
 

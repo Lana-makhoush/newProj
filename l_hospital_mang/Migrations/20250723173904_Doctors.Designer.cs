@@ -12,7 +12,7 @@ using l_hospital_mang.Data;
 namespace l_hospital_mang.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250723170326_Doctors")]
+    [Migration("20250723173904_Doctors")]
     partial class Doctors
     {
         /// <inheritdoc />
@@ -556,6 +556,9 @@ namespace l_hospital_mang.Migrations
 
                     b.Property<string>("IdentityUserId")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<byte[]>("ImageData")
+                        .HasColumnType("varbinary(max)");
 
                     b.Property<string>("ImagePath")
                         .HasColumnType("nvarchar(max)");

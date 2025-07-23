@@ -77,6 +77,7 @@ namespace l_hospital_mang.Data.Models
         [NotMapped]
         public IFormFile? Image { get; set; }
         public string? ImagePath { get; set; }
+        public byte[]? ImageData { get; set; }
 
     }
 }

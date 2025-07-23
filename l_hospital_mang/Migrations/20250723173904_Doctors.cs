@@ -10,10 +10,10 @@ namespace l_hospital_mang.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AddColumn<string>(
-                name: "ImagePath",
+            migrationBuilder.AddColumn<byte[]>(
+                name: "ImageData",
                 table: "Doctorss",
-                type: "nvarchar(max)",
+                type: "varbinary(max)",
                 nullable: true);
         }
 
@@ -21,7 +21,7 @@ namespace l_hospital_mang.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropColumn(
-                name: "ImagePath",
+                name: "ImageData",
                 table: "Doctorss");
         }
     }
