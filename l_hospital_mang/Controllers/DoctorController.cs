@@ -477,11 +477,13 @@ namespace l_hospital_mang.Controllers
                 data = new
                 {
                     doctorId = doctor.Id,
+                   
+                    fullName = $"{doctor.First_Name} {doctor.Middel_name} {doctor.Last_Name}",
+                    email = doctor.Email,
+                    phoneNumber = doctor.PhoneNumber,
                     residence = doctor.Residence,
-                    overview = doctor.Overview,
-                    pdfFileBase64 = pdfBase64,
-                    pdfUrl = pdfUrl,
-                    imageUrl = imageUrl
+                    imagePath = imageUrl,
+                   
                 }
             });
         }
