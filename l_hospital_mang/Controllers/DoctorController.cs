@@ -423,15 +423,13 @@ namespace l_hospital_mang.Controllers
             string pdfUrl = null;
             string imageUrl = null;
 
-            var request = HttpContext.Request;
-            var baseUrl = $"{request.Scheme}://{request.Host}";
-
-            // حفظ ملف PDF
             if (dto.PdfFile != null)
             {
-                using var memoryStream = new MemoryStream();
-                await dto.PdfFile.CopyToAsync(memoryStream);
-                doctor.PdfFile = memoryStream.ToArray();
+                using (var memoryStream = new MemoryStream())
+                {
+                    await dto.PdfFile.CopyToAsync(memoryStream);
+                    doctor.PdfFile = memoryStream.ToArray();
+                }
 
                 pdfBase64 = Convert.ToBase64String(doctor.PdfFile);
 
@@ -441,26 +439,33 @@ namespace l_hospital_mang.Controllers
 
                 await System.IO.File.WriteAllBytesAsync(pdfAbsolutePath, doctor.PdfFile);
 
+                var request = HttpContext.Request;
+                var baseUrl = $"{request.Scheme}://{request.Host}";
                 pdfUrl = $"{baseUrl}/{pdfRelativePath.Replace("\\", "/")}";
             }
 
-           
-            if (dto.Image != null)
+            if (dto.Image != null && dto.Image.Length > 0)
             {
-                var uploadsFolder = Path.Combine(_environment.WebRootPath, "Images", "Doctors");
-                Directory.CreateDirectory(uploadsFolder);
+                var doctorFolder = Path.Combine("uploads", "doctor");
+                var doctorFolderPath = Path.Combine(_environment.WebRootPath, doctorFolder);
 
-                var imageFileName = $"{Guid.NewGuid()}_{dto.Image.FileName}";
-                var imageFilePath = Path.Combine(uploadsFolder, imageFileName);
+                if (!Directory.Exists(doctorFolderPath))
+                    Directory.CreateDirectory(doctorFolderPath);
 
-                using (var stream = new FileStream(imageFilePath, FileMode.Create))
+                var imageFileName = $"{Guid.NewGuid()}{Path.GetExtension(dto.Image.FileName)}";
+                var imageRelativePath = Path.Combine(doctorFolder, imageFileName);
+                var imageAbsolutePath = Path.Combine(_environment.WebRootPath, imageRelativePath);
+
+                using (var stream = new FileStream(imageAbsolutePath, FileMode.Create))
                 {
                     await dto.Image.CopyToAsync(stream);
                 }
 
-                doctor.ImagePath = $"/Images/Doctors/{imageFileName}";
+                doctor.ImagePath = imageRelativePath.Replace("\\", "/");
 
-                imageUrl = $"{baseUrl}{doctor.ImagePath}";
+                var request = HttpContext.Request;
+                var baseUrl = $"{request.Scheme}://{request.Host}";
+                imageUrl = $"{baseUrl}/{doctor.ImagePath}";
             }
 
             await _context.SaveChangesAsync();
@@ -480,6 +485,7 @@ namespace l_hospital_mang.Controllers
                 }
             });
         }
+
 
         [Authorize(Roles = "Doctor,Manager,LabDoctor,RadiographyDoctor")]
         [HttpGet("get-doctor-profile")]
@@ -1575,8 +1581,8 @@ namespace l_hospital_mang.Controllers
                 doctors = doctors
             });
         }
-       [Authorize(Roles = "Doctor")]
-[HttpGet("has-clinic")]
+        [Authorize(Roles = "Doctor,Manager,LabDoctor,RadiographyDoctor")]
+        [HttpGet("has-clinic")]
 public async Task<IActionResult> HasClinic()
 {
     var userIdString = User.FindFirst("userId")?.Value;
