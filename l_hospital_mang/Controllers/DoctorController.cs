@@ -1707,7 +1707,44 @@ public async Task<IActionResult> HasClinic()
 
     return Ok(new { hasClinic });
 }
+        [Authorize(Roles ="Manager")]
+        [HttpGet("all")]
+        public async Task<IActionResult> GetAllDoctorsrecords()
+        {
+            var baseUrl = $"{Request.Scheme}://{Request.Host}";
 
+            var doctors = await _context.Doctorss
+                .Include(d => d.Clinic)
+                .Select(d => new
+                {
+                    d.Id,
+                    FullName = $"{d.First_Name} {d.Middel_name} {d.Last_Name}",
+                    d.PhoneNumber,
+                    d.Residence,
+                    d.Overview,
+                    ClinicName = d.Clinic != null ? d.Clinic.Clinic_Name : "N/A",
+                    pdf = d.PdfFile != null ? $"{baseUrl}/api/doctors/pdf/{d.Id}" : null,
+                    photo = !string.IsNullOrEmpty(d.ImagePath) ? $"{baseUrl}/{d.ImagePath}" : null
+                })
+                .ToListAsync();
+
+            if (!doctors.Any())
+            {
+                return Ok(new
+                {
+                    status = 200,
+                    message = "No doctors found.",
+                    data = new List<object>()
+                });
+            }
+
+            return Ok(new
+            {
+                status = 200,
+                message = "All doctors retrieved successfully.",
+                data = doctors
+            });
+        }
 
 
 
