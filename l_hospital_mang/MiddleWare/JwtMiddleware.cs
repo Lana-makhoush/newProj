@@ -5,7 +5,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
-using l_hospital_mang.Data; // تأكد من وجود هذا
+using l_hospital_mang.Data; 
 using Microsoft.EntityFrameworkCore;
 
 public class JwtMiddleware
@@ -52,7 +52,7 @@ public class JwtMiddleware
                     return;
                 }
 
-                // إرفاق المستخدم للسياق
+                
                 context.Items["Doctor"] = doctor;
             }
             catch

@@ -156,7 +156,7 @@ namespace l_hospital_mang.Data
 
             modelBuilder.Entity<AmbulanceRequest>()
         .HasOne(ar => ar.AcceptedByEmployee)
-        .WithMany() // لا نربطها بقائمة طلبات مثلاً، لذا WithMany بدون navigation
+        .WithMany() 
         .HasForeignKey(ar => ar.AcceptedByEmployeeId)
         .OnDelete(DeleteBehavior.SetNull);
             // one to many patient و AmbulanceRequest

@@ -198,6 +198,73 @@ namespace l_hospital_mang.Controllers
                 data = rooms
             });
         }
+        [Authorize(Roles = "Manager")]
+        [HttpGet("available-rooms")]
+        public async Task<IActionResult> GetAvailableRooms()
+        {
+            var availableRooms = await _context.Room
+                .Where(r => r.IsOccupied.ToLower() == "false")
+                .Select(r => new
+                {
+                    r.Id,
+                    r.RoomNumber,
+                    r.FloorNumber,
+                    r.bedsNumber,
+                    r.Price
+                })
+                .ToListAsync();
+
+            if (!availableRooms.Any())
+            {
+                return NotFound(new
+                {
+                    status = 404,
+                    message = "No available rooms found."
+                });
+            }
+
+            return Ok(new
+            {
+                status = 200,
+                message = "Available rooms fetched successfully.",
+                data = availableRooms
+            });
+        }
+
+
+        [Authorize(Roles = "Manager")]
+        [HttpGet("occupied-rooms")]
+        public async Task<IActionResult> GetOccupiedRooms()
+        {
+            var occupiedRooms = await _context.Room
+                .Where(r => r.IsOccupied.ToLower() == "true")
+                .Select(r => new
+                {
+                    r.Id,
+                    r.RoomNumber,
+                    r.FloorNumber,
+                    r.bedsNumber,
+                    r.Price
+                })
+                .ToListAsync();
+
+            if (!occupiedRooms.Any())
+            {
+                return NotFound(new
+                {
+                    status = 404,
+                    message = "No occupied rooms found."
+                });
+            }
+
+            return Ok(new
+            {
+                status = 200,
+                message = "Occupied rooms fetched successfully.",
+                data = occupiedRooms
+            });
+        }
+
 
     }
 }

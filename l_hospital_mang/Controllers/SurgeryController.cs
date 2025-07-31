@@ -280,6 +280,36 @@ namespace l_hospital_mang.Controllers
             });
         }
 
+        [Authorize(Roles = "Manager")]
+
+        [HttpGet("surgery-reservations-today-and-future")]
+        public async Task<IActionResult> GetSurgeryReservationsTodayAndFuture()
+        {
+            var today = DateTime.Today;
+
+            var reservations = await _context.surgery_reservationss
+                .Where(r => r.SurgeryDate >= today)
+                .Include(r => r.Doctor)
+                .Include(r => r.Patient)
+                .Select(r => new
+                {
+                    r.Id,
+                    SurgeryDate = r.SurgeryDate.ToString("yyyy-MM-dd"),
+                    r.SurgeryTime,
+                    r.SurgeryType,
+                    r.Price,
+                    DoctorName = r.Doctor != null ? $"{r.Doctor.First_Name} {r.Doctor.Middel_name} {r.Doctor.Last_Name}" : "N/A",
+                    PatientName = $"{r.Patient.First_Name} {r.Patient.Middel_name} {r.Patient.Last_Name}"
+                })
+                .ToListAsync();
+
+            if (reservations == null || reservations.Count == 0)
+            {
+                return NotFound(new { message = "There are no surgery reservations." });
+            }
+
+            return Ok(reservations);
+        }
 
 
 

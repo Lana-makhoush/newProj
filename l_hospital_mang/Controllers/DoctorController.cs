@@ -477,13 +477,107 @@ namespace l_hospital_mang.Controllers
                 data = new
                 {
                     doctorId = doctor.Id,
-                   
                     fullName = $"{doctor.First_Name} {doctor.Middel_name} {doctor.Last_Name}",
                     email = doctor.Email,
                     phoneNumber = doctor.PhoneNumber,
                     residence = doctor.Residence,
                     imagePath = imageUrl,
                    
+                }
+            });
+        }
+        [Authorize(Roles = "Doctor,Manager,LabDoctor,RadiographyDoctor")]
+        [HttpPost("edit-doctor-profile")]
+        public async Task<IActionResult> EditDoctorProfile([FromForm] edit_dotoctor_profile dto)
+        {
+            var userIdClaim = User.FindFirst("userId")?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !long.TryParse(userIdClaim, out long doctorId))
+                return Unauthorized(new { status = 401, message = "Invalid or missing token." });
+
+            var doctor = await _context.Doctorss.FindAsync(doctorId);
+            if (doctor == null)
+                return NotFound(new { status = 404, message = "Doctor not found." });
+
+            if (!string.IsNullOrWhiteSpace(dto.First_Name))
+                doctor.First_Name = dto.First_Name;
+
+            if (!string.IsNullOrWhiteSpace(dto.Middel_name))
+                doctor.Middel_name = dto.Middel_name;
+
+            if (!string.IsNullOrWhiteSpace(dto.Last_Name))
+                doctor.Last_Name = dto.Last_Name;
+
+            if (!string.IsNullOrWhiteSpace(dto.Residence))
+                doctor.Residence = dto.Residence;
+
+            if (!string.IsNullOrWhiteSpace(dto.PhoneNumber))
+                doctor.PhoneNumber = dto.PhoneNumber;
+
+            if (!string.IsNullOrWhiteSpace(dto.Overview))
+                doctor.Overview = dto.Overview;
+
+            string pdfUrl = null;
+            string imageUrl = null;
+
+            if (dto.PdfFile != null)
+            {
+                using (var memoryStream = new MemoryStream())
+                {
+                    await dto.PdfFile.CopyToAsync(memoryStream);
+                    doctor.PdfFile = memoryStream.ToArray();
+                }
+
+                var pdfFileName = $"{Guid.NewGuid()}.pdf";
+                var pdfRelativePath = Path.Combine("uploads", pdfFileName);
+                var pdfAbsolutePath = Path.Combine(_environment.WebRootPath, pdfRelativePath);
+
+                await System.IO.File.WriteAllBytesAsync(pdfAbsolutePath, doctor.PdfFile);
+
+                var request = HttpContext.Request;
+                var baseUrl = $"{request.Scheme}://{request.Host}";
+                pdfUrl = $"{baseUrl}/{pdfRelativePath.Replace("\\", "/")}";
+            }
+
+            if (dto.Image != null && dto.Image.Length > 0)
+            {
+                var doctorFolder = Path.Combine("uploads", "doctor");
+                var doctorFolderPath = Path.Combine(_environment.WebRootPath, doctorFolder);
+
+                if (!Directory.Exists(doctorFolderPath))
+                    Directory.CreateDirectory(doctorFolderPath);
+
+                var imageFileName = $"{Guid.NewGuid()}{Path.GetExtension(dto.Image.FileName)}";
+                var imageRelativePath = Path.Combine(doctorFolder, imageFileName);
+                var imageAbsolutePath = Path.Combine(_environment.WebRootPath, imageRelativePath);
+
+                using (var stream = new FileStream(imageAbsolutePath, FileMode.Create))
+                {
+                    await dto.Image.CopyToAsync(stream);
+                }
+
+                doctor.ImagePath = imageRelativePath.Replace("\\", "/");
+
+                var request = HttpContext.Request;
+                var baseUrl = $"{request.Scheme}://{request.Host}";
+                imageUrl = $"{baseUrl}/{doctor.ImagePath}";
+            }
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new
+            {
+                status = 200,
+                message = "Doctor profile updated successfully.",
+                data = new
+                {
+                    doctorId = doctor.Id,
+                    fullName = $"{doctor.First_Name} {doctor.Middel_name} {doctor.Last_Name}",
+                    email = doctor.Email,
+                    phoneNumber = doctor.PhoneNumber,
+                    residence = doctor.Residence,
+                    overview = doctor.Overview,
+                    imageUrl = imageUrl,
+                    pdfUrl = pdfUrl
                 }
             });
         }
@@ -503,6 +597,7 @@ namespace l_hospital_mang.Controllers
 
             string pdfBase64 = null;
             string pdfUrl = null;
+            string imageUrl = null;
 
             if (doctor.PdfFile != null && doctor.PdfFile.Length > 0)
             {
@@ -522,6 +617,13 @@ namespace l_hospital_mang.Controllers
                 pdfUrl = $"{baseUrl}/{relativePath.Replace("\\", "/")}";
             }
 
+            if (!string.IsNullOrEmpty(doctor.ImagePath))
+            {
+                var request = HttpContext.Request;
+                var baseUrl = $"{request.Scheme}://{request.Host}";
+                imageUrl = $"{baseUrl}/{doctor.ImagePath}";
+            }
+
             return Ok(new
             {
                 status = 200,
@@ -530,19 +632,17 @@ namespace l_hospital_mang.Controllers
                 {
                     doctor.Id,
                     fullName = $"{doctor.First_Name} {doctor.Middel_name} {doctor.Last_Name}",
-                    
                     doctor.Residence,
                     doctor.PhoneNumber,
                     doctor.Email,
                     doctor.Overview,
                     doctor.ClinicId,
-                  
                     pdfFileBase64 = pdfBase64,
-                    pdfUrl = pdfUrl
+                    pdfUrl = pdfUrl,
+                    imageUrl = imageUrl
                 }
             });
         }
-
 
         [Authorize(Roles = "Doctor,Manager,LabDoctor,RadiographyDoctor")]
 

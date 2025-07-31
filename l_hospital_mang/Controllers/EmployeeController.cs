@@ -450,7 +450,7 @@ namespace l_hospital_mang.Controllers
                 ValidateIssuer = false,
                 ValidateIssuerSigningKey = true,
                 IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"])),
-                ValidateLifetime = false 
+                ValidateLifetime = false
             };
 
             var tokenHandler = new JwtSecurityTokenHandler();
@@ -671,10 +671,10 @@ namespace l_hospital_mang.Controllers
             var roles = await _userManager.GetRolesAsync(identityUser);
             if (!roles.Contains("Secretary"))
             {
-                return Forbid(); 
+                return Forbid();
             }
 
-            
+
             var result = await GenerateJwtToken(employee);
 
             return Ok(new
@@ -696,17 +696,205 @@ namespace l_hospital_mang.Controllers
         }
 
 
+        [Authorize(Roles = "Driver")]
+        [HttpPost("editprofile-employee")]
+        public async Task<IActionResult> EditProfileEmployee([FromForm] EmployeeProfileUpdateDto dto)
+        {
+            if (!ModelState.IsValid)
+            {
+                var errors = ModelState.Values.SelectMany(v => v.Errors)
+                                              .Select(e => e.ErrorMessage)
+                                              .ToList();
+
+                return BadRequest(new
+                {
+                    status = 400,
+                    message = "Validation failed.",
+                    errors = errors
+                });
+            }
+
+            var userIdClaim = User.FindFirst("userId")?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !long.TryParse(userIdClaim, out long employeeId))
+                return Unauthorized(new { status = 401, message = "Invalid or missing token." });
+
+            var employee = await _context.Employeess.FindAsync(employeeId);
+            if (employee == null)
+                return NotFound(new { status = 404, message = "Employee not found." });
+
+            if (!string.IsNullOrWhiteSpace(dto.First_Name))
+                employee.First_Name = dto.First_Name;
+
+            if (!string.IsNullOrWhiteSpace(dto.Middel_name))
+                employee.Middel_name = dto.Middel_name;
+
+            if (!string.IsNullOrWhiteSpace(dto.Last_Name))
+                employee.Last_Name = dto.Last_Name;
+
+            if (!string.IsNullOrWhiteSpace(dto.Residence))
+                employee.Residence = dto.Residence;
+
+            if (!string.IsNullOrWhiteSpace(dto.PhoneNumber))
+                employee.PhoneNumber = dto.PhoneNumber;
+
+            if (dto.Age.HasValue)
+                employee.Age = dto.Age.Value;
+
+            if (dto.ID_Number.HasValue)
+                employee.ID_Number = dto.ID_Number.Value;
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new
+            {
+                status = 200,
+                message = "Employee profile updated successfully.",
+                data = new
+                {
+                    employee.Id,
+                    employee.First_Name,
+                    employee.Middel_name,
+                    employee.Last_Name,
+                    employee.PhoneNumber,
+                    age = employee.Age.HasValue ? employee.Age.Value.ToString("yyyy-MM-dd") : null,
+                    employee.ID_Number,
+                    employee.Residence
+                }
+            });
+        }
+        [Authorize(Roles = "Receptionist,Secretary")]
+        [HttpPost("editprofile-receptionist-secretary")]
+        public async Task<IActionResult> EditProfileReceptionistSecretary([FromForm] EmployeeProfileUpdateDto dto)
+        {
+            if (!ModelState.IsValid)
+            {
+                var errors = ModelState.Values.SelectMany(v => v.Errors)
+                                              .Select(e => e.ErrorMessage)
+                                              .ToList();
+
+                return BadRequest(new
+                {
+                    status = 400,
+                    message = "Validation failed.",
+                    errors = errors
+                });
+            }
+
+            var employeeIdClaim = User.FindFirst("employeeId")?.Value;
+            if (string.IsNullOrEmpty(employeeIdClaim) || !long.TryParse(employeeIdClaim, out long employeeId))
+                return Unauthorized(new { status = 401, message = "Invalid or missing token." });
+
+            var employee = await _context.Employeess.FindAsync(employeeId);
+            if (employee == null)
+                return NotFound(new { status = 404, message = "Employee not found." });
+
+            if (!string.IsNullOrWhiteSpace(dto.First_Name))
+                employee.First_Name = dto.First_Name;
+
+            if (!string.IsNullOrWhiteSpace(dto.Middel_name))
+                employee.Middel_name = dto.Middel_name;
+
+            if (!string.IsNullOrWhiteSpace(dto.Last_Name))
+                employee.Last_Name = dto.Last_Name;
+
+            if (!string.IsNullOrWhiteSpace(dto.Residence))
+                employee.Residence = dto.Residence;
+
+            if (!string.IsNullOrWhiteSpace(dto.PhoneNumber))
+                employee.PhoneNumber = dto.PhoneNumber;
+
+            if (dto.Age.HasValue)
+                employee.Age = dto.Age.Value;
+
+            if (dto.ID_Number.HasValue)
+                employee.ID_Number = dto.ID_Number.Value;
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new
+            {
+                status = 200,
+                message = "Employee profile updated successfully.",
+                data = new
+                {
+                    employee.Id,
+                    employee.First_Name,
+                    employee.Middel_name,
+                    employee.Last_Name,
+                    employee.PhoneNumber,
+                    age = employee.Age.HasValue ? employee.Age.Value.ToString("yyyy-MM-dd") : null,
+                    employee.ID_Number,
+                    employee.Residence
+                }
+            });
+        }
+
+        [Authorize(Roles = "Receptionist,Secretary")]
+        [HttpGet("profile-receptionist-secretary")]
+        public async Task<IActionResult> GetProfileReceptionistSecretary()
+        {
+            var employeeIdClaim = User.FindFirst("employeeId")?.Value;
+            if (string.IsNullOrEmpty(employeeIdClaim) || !long.TryParse(employeeIdClaim, out long employeeId))
+                return Unauthorized(new { status = 401, message = "Invalid or missing token." });
+
+            var employee = await _context.Employeess.FindAsync(employeeId);
+            if (employee == null)
+                return NotFound(new { status = 404, message = "Employee not found." });
+
+            return Ok(new
+            {
+                status = 200,
+                message = "Employee profile fetched successfully.",
+                data = new
+                {
+                    employee.Id,
+                    employee.First_Name,
+                    employee.Middel_name,
+                    employee.Last_Name,
+                    employee.PhoneNumber,
+                    age = employee.Age.HasValue ? employee.Age.Value.ToString("yyyy-MM-dd") : null,
+                    employee.ID_Number,
+                    employee.Residence
+                }
+            });
+        }
+
+        [Authorize(Roles = "Driver")]
+        [HttpGet("profile-driver")]
+        public async Task<IActionResult> GetProfileDriver()
+        {
+            var userIdClaim = User.FindFirst("userId")?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !long.TryParse(userIdClaim, out long employeeId))
+                return Unauthorized(new { status = 401, message = "Invalid or missing token." });
+
+            var employee = await _context.Employeess.FindAsync(employeeId);
+            if (employee == null)
+                return NotFound(new { status = 404, message = "Employee not found." });
+
+            return Ok(new
+            {
+                status = 200,
+                message = "Employee profile fetched successfully.",
+                data = new
+                {
+                    employee.Id,
+                    employee.First_Name,
+                    employee.Middel_name,
+                    employee.Last_Name,
+                    employee.PhoneNumber,
+                    age = employee.Age.HasValue ? employee.Age.Value.ToString("yyyy-MM-dd") : null,
+                    employee.ID_Number,
+                    employee.Residence
+                }
+            });
+        }
+
 
 
 
 
 
     }
-
-
-
-
-
 
 
 
