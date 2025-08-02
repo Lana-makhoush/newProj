@@ -635,7 +635,7 @@ namespace l_hospital_mang.Controllers
                     doctor.ClinicId,
                     pdfFileBase64 = pdfBase64,
                     pdfUrl = pdfUrl,
-                    imageUrl = imageUrl
+                    imageUrl = doctor.ImagePath
                 }
             });
         }
