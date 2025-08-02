@@ -24,5 +24,9 @@ public class EmployeeProfileUpdateDto
     [DataType(DataType.Date)]
     public DateTime? Age { get; set; } 
     [Range(0, int.MaxValue, ErrorMessage = "The value must be positive.")]
-    public int? ID_Number { get; set; } 
+    public int? ID_Number { get; set; }
+    [EmailAddress(ErrorMessage = "Invalid email address.")]
+    [StringLength(100)]
+    public string? Email { get; set; }
+
 }

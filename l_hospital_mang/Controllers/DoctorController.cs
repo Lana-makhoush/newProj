@@ -463,9 +463,7 @@ namespace l_hospital_mang.Controllers
 
                 doctor.ImagePath = imageRelativePath.Replace("\\", "/");
 
-                var request = HttpContext.Request;
-                var baseUrl = $"{request.Scheme}://{request.Host}";
-                imageUrl = $"{baseUrl}/{doctor.ImagePath}";
+              
             }
 
             await _context.SaveChangesAsync();
@@ -481,8 +479,8 @@ namespace l_hospital_mang.Controllers
                     email = doctor.Email,
                     phoneNumber = doctor.PhoneNumber,
                     residence = doctor.Residence,
-                    imagePath = imageUrl,
-                   
+                    imagePath = doctor.ImagePath,
+
                 }
             });
         }
@@ -557,9 +555,7 @@ namespace l_hospital_mang.Controllers
 
                 doctor.ImagePath = imageRelativePath.Replace("\\", "/");
 
-                var request = HttpContext.Request;
-                var baseUrl = $"{request.Scheme}://{request.Host}";
-                imageUrl = $"{baseUrl}/{doctor.ImagePath}";
+              
             }
 
             await _context.SaveChangesAsync();
@@ -576,7 +572,7 @@ namespace l_hospital_mang.Controllers
                     phoneNumber = doctor.PhoneNumber,
                     residence = doctor.Residence,
                     overview = doctor.Overview,
-                    imageUrl = imageUrl,
+                    imagePath = doctor.ImagePath,
                     pdfUrl = pdfUrl
                 }
             });

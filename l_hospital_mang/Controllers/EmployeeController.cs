@@ -743,6 +743,9 @@ namespace l_hospital_mang.Controllers
             if (dto.ID_Number.HasValue)
                 employee.ID_Number = dto.ID_Number.Value;
 
+            if (!string.IsNullOrWhiteSpace(dto.Email))
+                employee.Email = dto.Email;
+
             await _context.SaveChangesAsync();
 
             return Ok(new
@@ -752,16 +755,16 @@ namespace l_hospital_mang.Controllers
                 data = new
                 {
                     employee.Id,
-                    employee.First_Name,
-                    employee.Middel_name,
-                    employee.Last_Name,
+                    full_name = $"{employee.First_Name} {employee.Middel_name} {employee.Last_Name}".Trim(),
                     employee.PhoneNumber,
                     age = employee.Age.HasValue ? employee.Age.Value.ToString("yyyy-MM-dd") : null,
                     employee.ID_Number,
-                    employee.Residence
+                    employee.Residence,
+                    employee.Email
                 }
             });
         }
+
         [Authorize(Roles = "Receptionist,Secretary")]
         [HttpPost("editprofile-receptionist-secretary")]
         public async Task<IActionResult> EditProfileReceptionistSecretary([FromForm] EmployeeProfileUpdateDto dto)
@@ -809,6 +812,9 @@ namespace l_hospital_mang.Controllers
             if (dto.ID_Number.HasValue)
                 employee.ID_Number = dto.ID_Number.Value;
 
+            if (!string.IsNullOrWhiteSpace(dto.Email))
+                employee.Email = dto.Email;
+
             await _context.SaveChangesAsync();
 
             return Ok(new
@@ -818,16 +824,16 @@ namespace l_hospital_mang.Controllers
                 data = new
                 {
                     employee.Id,
-                    employee.First_Name,
-                    employee.Middel_name,
-                    employee.Last_Name,
+                    full_name = $"{employee.First_Name} {employee.Middel_name} {employee.Last_Name}".Trim(),
                     employee.PhoneNumber,
                     age = employee.Age.HasValue ? employee.Age.Value.ToString("yyyy-MM-dd") : null,
                     employee.ID_Number,
-                    employee.Residence
+                    employee.Residence,
+                    employee.Email
                 }
             });
         }
+
 
         [Authorize(Roles = "Receptionist,Secretary")]
         [HttpGet("profile-receptionist-secretary")]
@@ -877,14 +883,12 @@ namespace l_hospital_mang.Controllers
                 message = "Employee profile fetched successfully.",
                 data = new
                 {
-                    employee.Id,
-                    employee.First_Name,
-                    employee.Middel_name,
-                    employee.Last_Name,
+                    full_name = $"{employee.First_Name} {employee.Middel_name} {employee.Last_Name}".Trim(),
                     employee.PhoneNumber,
                     age = employee.Age.HasValue ? employee.Age.Value.ToString("yyyy-MM-dd") : null,
                     employee.ID_Number,
-                    employee.Residence
+                    employee.Residence,
+                    employee.Email
                 }
             });
         }
