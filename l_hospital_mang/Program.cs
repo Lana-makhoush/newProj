@@ -81,8 +81,23 @@ builder.Services.AddAuthentication(options =>
         RoleClaimType = ClaimTypes.Role
     };
 
+    // ? ??? ?? ????? ????? ?????? ?????? ?? SignalR
     options.Events = new JwtBearerEvents
     {
+        OnMessageReceived = context =>
+        {
+            var accessToken = context.Request.Query["access_token"];
+
+            // ???? ?? ????? ???? ??? Hub
+            var path = context.HttpContext.Request.Path;
+            if (!string.IsNullOrEmpty(accessToken) &&
+                path.StartsWithSegments("/hubs/delay"))
+            {
+                context.Token = accessToken;
+            }
+
+            return Task.CompletedTask;
+        },
         OnAuthenticationFailed = async context =>
         {
             if (!context.Response.HasStarted)
@@ -119,6 +134,7 @@ builder.Services.AddAuthentication(options =>
         }
     };
 });
+
 builder.Services.AddSignalR();
 builder.Services.AddSingleton<IUserIdProvider, CustomUserIdProvider>();
 
@@ -159,5 +175,7 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.MapHub<AmbulanceHub>("/ambulanceHub");
+app.MapHub<DelayNotificationHub>("/hubs/delay");
+
 
 app.Run();

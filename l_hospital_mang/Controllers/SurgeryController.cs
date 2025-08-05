@@ -2,12 +2,16 @@
 using l_hospital_mang.Data.Models;
 using l_hospital_mang.DTOs;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+
 
 namespace l_hospital_mang.Controllers
 {
@@ -313,5 +317,47 @@ namespace l_hospital_mang.Controllers
 
 
 
+   [Authorize(Roles = "Doctor,Manager")]
+    [HttpGet("my-upcoming-surgeries")]
+    public async Task<IActionResult> GetMyUpcomingSurgeries()
+    {
+        var userIdClaim = User.FindFirst("userId")?.Value;
+        if (string.IsNullOrEmpty(userIdClaim) || !long.TryParse(userIdClaim, out long doctorId))
+            return Unauthorized(new { status = 401, message = "Invalid or missing token." });
+
+        var doctor = await _context.Doctorss.FindAsync(doctorId);
+        if (doctor == null)
+            return NotFound(new { status = 404, message = "Doctor not found." });
+
+        var today = DateTime.Today;
+
+            var surgeries = await _context.surgery_reservationss
+        .Where(sr => sr.DoctorId == doctorId &&
+                     EF.Functions.DateDiffDay(today, sr.SurgeryDate) >= 0)
+        .Include(sr => sr.Patient)
+        .Select(sr => new
+        {
+            sr.Id,
+            SurgeryDate = sr.SurgeryDate.ToString("yyyy-MM-dd"), 
+            sr.SurgeryTime,
+            sr.SurgeryType,
+            sr.Price,
+            PatientName = $"{sr.Patient.First_Name} {sr.Patient.Middel_name} {sr.Patient.Last_Name}"
+        })
+        .ToListAsync();
+
+            if (surgeries.Count == 0)
+                return NotFound(new { status = 404, message = "No upcoming surgery reservations found for this doctor." });
+
+            return Ok(new
+        {
+            status = 200,
+            message = "Upcoming surgeries retrieved successfully.",
+            data = surgeries,
+            doctorId,
+
+        });
     }
+
+}
 }

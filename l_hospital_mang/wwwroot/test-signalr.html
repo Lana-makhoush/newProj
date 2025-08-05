@@ -1,36 +1,67 @@
 ﻿<!DOCTYPE html>
-<html lang="en">
+<html lang="ar">
 <head>
-    <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Driver Notification Test</title>
+    <meta charset="UTF-8">
+    <title>نظام إشعارات تأخير المواعيد</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            direction: rtl;
+            background-color: #f2f2f2;
+            padding: 20px;
+        }
+
+        h2 {
+            color: #333;
+        }
+
+        #notifications {
+            background-color: #fff;
+            border: 1px solid #ccc;
+            padding: 15px;
+            margin-top: 20px;
+            max-width: 600px;
+        }
+
+        p {
+            background-color: #e7f3fe;
+            border-right: 4px solid #2196F3;
+            padding: 10px;
+            margin: 10px 0;
+        }
+    </style>
 </head>
 <body>
-    <h2>Waiting for ambulance requests...</h2>
-    <div id="log"></div>
+    <h2>📢 إشعارات تأخير المواعيد</h2>
+    <div id="notifications">
+        <p>في انتظار الإشعارات...</p>
+    </div>
 
     <script>
-        // إنشاء اتصال مع تمرير role=Driver كـ query parameter
+        // ✅ تأكد أن التوكن صحيح تمامًا
+        const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJnaGFsaWFzdWhlZWwyQGdtYWlsLmNvbSIsInVzZXJJZCI6IjQiLCJqdGkiOiIzZjU4NmQzNy0xOTA1LTQ3NzMtODNmNy1kZWVjOGIzMTQyMzEiLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJQYXRpZW50IiwiZXhwIjoxNzU0NDI5MjAyLCJpc3MiOiJ5b3VyQXBwIiwiYXVkIjoieW91clVzZXJzIn0.yUGm5qbMyu8m2h8QxVBHht1l8OxRJqSrbQP6uonbUK4";
+
         const connection = new signalR.HubConnectionBuilder()
-            .withUrl("https://localhost:44379/AmbulanceHub?role=Driver")
+            .withUrl("https://localhost:44379/hubs/delay", {
+                accessTokenFactory: () => token
+            })
             .withAutomaticReconnect()
             .build();
 
-        // استقبال إشعار طلب سيارة إسعاف جديد
-        connection.on("ReceiveAmbulanceRequest", (data) => {
-            const log = document.getElementById("log");
-            log.innerHTML += `<p><strong>Request:</strong> ID: ${data.requestId}, Location: (${data.latitude}, ${data.longitude}), Patient: ${data.patientName}</p>`;
+        connection.on("ReceiveDelayNotification", (data) => {
+            const div = document.getElementById("notifications");
+            div.innerHTML += `<p><strong>📩 إشعار جديد:</strong> ${data.message}</p>`;
         });
 
-        // بدء الاتصال بالـ Hub
         connection.start()
             .then(() => {
-                console.log("Connected to AmbulanceHub as Driver.");
+                console.log("✅ تم الاتصال بنجاح بـ DelayNotificationHub");
             })
             .catch(err => {
-                console.error("Connection error:", err);
+                console.error("❌ فشل الاتصال:", err);
+                const div = document.getElementById("notifications");
+                div.innerHTML += `<p style="color:red;"><strong>خطأ في الاتصال:</strong> ${err.message}</p>`;
             });
     </script>
 </body>

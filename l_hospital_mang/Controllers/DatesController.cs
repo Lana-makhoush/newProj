@@ -473,7 +473,7 @@
                 }
             });
         }
-        [Authorize(Roles = "Doctor,Admin,LabDoctor, RadiographyDoctor")]
+        [Authorize(Roles = "Doctor,Manager,LabDoctor, RadiographyDoctor")]
         [HttpGet("doctor/patients")]
         public async Task<IActionResult> GetPatientsForDoctor()
         {
