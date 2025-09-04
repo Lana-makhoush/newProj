@@ -155,7 +155,7 @@ namespace l_hospital_mang.Controllers
             var smtpServer = "smtp.gmail.com";
             var port = 587;
             var senderEmail = "lanamakhoush19@gmail.com";
-            var senderPassword = "wmwj jknk udgz znzp";
+            var senderPassword = "nyyw fltt soda huop";
 
             var message = new MimeKit.MimeMessage();
             message.From.Add(new MimeKit.MailboxAddress("Hospital App", senderEmail));
