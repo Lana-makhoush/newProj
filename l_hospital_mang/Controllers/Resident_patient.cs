@@ -19,7 +19,7 @@ namespace l_hospital_mang.Controllers
         {
             _context = context;
         }
-        [Authorize(Roles = "Receptionist")]
+        //[Authorize(Roles = "Receptionist")]
         [HttpPost("add-patient-simple")]
         public async Task<IActionResult> AddResidentPatientSimple([FromForm] Resident_patients patient)
         {

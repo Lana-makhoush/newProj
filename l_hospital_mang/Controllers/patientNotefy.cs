@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 
 namespace l_hospital_mang.Controllers
 {
@@ -13,11 +14,13 @@ namespace l_hospital_mang.Controllers
     {
         private readonly AppDbContext _context;
         private readonly IHubContext<DelayNotificationHub> _hubContext;
+        private readonly ILogger<patientNotefy> _logger;
 
-        public patientNotefy(AppDbContext context, IHubContext<DelayNotificationHub> hubContext)
+        public patientNotefy(AppDbContext context, IHubContext<DelayNotificationHub> hubContext, ILogger<patientNotefy> logger)
         {
             _context = context;
             _hubContext = hubContext;
+            _logger = logger;
         }
 
         [Authorize(Roles = "Doctor,Manager,LabDoctor,RadiographyDoctor")]
@@ -26,12 +29,14 @@ namespace l_hospital_mang.Controllers
         {
             if (delayMinutes <= 0)
             {
+                _logger.LogWarning("Invalid delayMinutes value: {DelayMinutes}", delayMinutes);
                 return BadRequest(new { status = 400, message = "Delay minutes must be greater than zero." });
             }
 
             var date = await _context.Datess.FindAsync(dateId);
             if (date == null)
             {
+                _logger.LogWarning("Date not found for dateId: {DateId}", dateId);
                 return NotFound(new { status = 404, message = "Date not found." });
             }
 
@@ -42,6 +47,7 @@ namespace l_hospital_mang.Controllers
 
             if (!reservations.Any())
             {
+                _logger.LogWarning("No reservations found for dateId: {DateId}", dateId);
                 return NotFound(new { status = 404, message = "No reservations found for this date." });
             }
 
@@ -50,14 +56,18 @@ namespace l_hospital_mang.Controllers
                 ? $"{doctor.First_Name} {doctor.Middel_name} {doctor.Last_Name}".Trim()
                 : "الطبيب";
 
+            _logger.LogInformation("Sending delay notifications for dateId: {DateId} with delayMinutes: {DelayMinutes}. Total reservations: {Count}", dateId, delayMinutes, reservations.Count);
+
             foreach (var reservation in reservations)
             {
                 var patient = reservation.Patient;
-                var userId = patient.IdentityUserId;
+                var id = patient.Id;
 
-                if (!string.IsNullOrEmpty(userId))
+                if (id > 0)
                 {
+                    var userId = id.ToString();
                     var message = $"نأسف، سيتم تأخير موعدك مع الدكتور {doctorName} بمقدار {delayMinutes} دقيقة.";
+                    _logger.LogInformation("Sending notification to UserId: {UserId} - Message: {Message}", userId, message);
 
                     await _hubContext.Clients.User(userId).SendAsync("ReceiveDelayNotification", new
                     {
@@ -65,8 +75,15 @@ namespace l_hospital_mang.Controllers
                         doctorName,
                         message
                     });
+
+                    _logger.LogInformation("Notification sent successfully to UserId: {UserId}", userId);
+                }
+                else
+                {
+                    _logger.LogWarning("Patient with reservationId: {ReservationId} has invalid Id", reservation.Id);
                 }
             }
+
 
             return Ok(new
             {
